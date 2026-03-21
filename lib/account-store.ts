@@ -35,8 +35,11 @@ type StoredUser = {
   id: string;
   name: string;
   email: string;
-  passwordHash: string;
-  salt: string;
+  /** Set when the user signs in with Clerk (OAuth / magic link / etc.). */
+  clerkId?: string;
+  /** Legacy email+password accounts only. */
+  passwordHash?: string;
+  salt?: string;
   subscriptionPlan: SubscriptionPlan;
   dashboard: SavedDashboard | null;
   createdAt: string;
@@ -112,7 +115,11 @@ export async function loginUser(email: string, password: string) {
   const db = await readDb();
   const user = db.users.find((entry) => entry.email === email.trim().toLowerCase());
 
-  if (!user || !verifyPassword(password, user.salt, user.passwordHash)) {
+  if (!user?.passwordHash || !user.salt) {
+    throw new Error("This email uses Clerk sign-in. Use Sign in with Google or email on the account card.");
+  }
+
+  if (!verifyPassword(password, user.salt, user.passwordHash)) {
     throw new Error("Invalid email or password.");
   }
 
@@ -167,6 +174,82 @@ export async function updateSubscription(sessionToken: string | undefined, subsc
   user.subscriptionPlan = subscriptionPlan;
   await writeDb(db);
 
+  return publicUser(user);
+}
+
+export async function syncClerkAccount(input: {
+  clerkUserId: string;
+  email: string | null | undefined;
+  firstName: string | null | undefined;
+  lastName: string | null | undefined;
+  username: string | null | undefined;
+}) {
+  const db = await readDb();
+  const displayName =
+    [input.firstName, input.lastName].filter(Boolean).join(" ").trim() ||
+    input.username?.trim() ||
+    input.email?.split("@")[0] ||
+    "Player";
+  const emailNorm = input.email?.trim().toLowerCase() ?? `${input.clerkUserId}@clerk.knightora`;
+
+  let user = db.users.find((entry) => entry.clerkId === input.clerkUserId);
+  if (user) {
+    let changed = false;
+    if (input.email && user.email !== emailNorm) {
+      user.email = emailNorm;
+      changed = true;
+    }
+    if (displayName && user.name !== displayName) {
+      user.name = displayName;
+      changed = true;
+    }
+    if (changed) await writeDb(db);
+    return { user: publicUser(user), dashboard: user.dashboard };
+  }
+
+  if (input.email) {
+    const existing = db.users.find((entry) => entry.email === emailNorm && !entry.clerkId);
+    if (existing) {
+      existing.clerkId = input.clerkUserId;
+      if (displayName) existing.name = displayName;
+      await writeDb(db);
+      return { user: publicUser(existing), dashboard: existing.dashboard };
+    }
+  }
+
+  const newUser: StoredUser = {
+    id: randomUUID(),
+    name: displayName,
+    email: emailNorm,
+    clerkId: input.clerkUserId,
+    subscriptionPlan: "free",
+    dashboard: null,
+    createdAt: new Date().toISOString(),
+  };
+  db.users.push(newUser);
+  await writeDb(db);
+  return { user: publicUser(newUser), dashboard: null };
+}
+
+export async function saveDashboardForClerk(clerkUserId: string, dashboard: SavedDashboard) {
+  const db = await readDb();
+  const user = db.users.find((entry) => entry.clerkId === clerkUserId);
+  if (!user) {
+    throw new Error("You must be signed in to save this dashboard.");
+  }
+  user.dashboard = dashboard;
+  await writeDb(db);
+  return { user: publicUser(user), dashboard: user.dashboard };
+}
+
+export async function updateSubscriptionForClerk(clerkUserId: string, subscriptionPlan: SubscriptionPlan) {
+  const db = await readDb();
+  const user = db.users.find((entry) => entry.clerkId === clerkUserId);
+  if (!user) {
+    throw new Error("You must be signed in.");
+  }
+  user.subscriptionPlan = subscriptionPlan;
+  await writeDb(db);
   return publicUser(user);
 }
 

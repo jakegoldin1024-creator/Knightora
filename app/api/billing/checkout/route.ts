@@ -1,6 +1,8 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 import { getSessionAccount, getSessionCookieName, type SubscriptionPlan } from "@/lib/account-store";
+import { resolveClerkKnightoraAccount } from "@/lib/clerk-account";
 import { getPriceIdForPlan, getStripeClient, isBillablePlan } from "@/lib/billing";
 
 export async function POST(request: NextRequest) {
@@ -11,9 +13,17 @@ export async function POST(request: NextRequest) {
       throw new Error("That plan does not require checkout.");
     }
 
-    const cookieStore = await cookies();
-    const sessionToken = cookieStore.get(getSessionCookieName())?.value;
-    const account = await getSessionAccount(sessionToken);
+    const { userId } = await auth();
+    let account = null as Awaited<ReturnType<typeof resolveClerkKnightoraAccount>>;
+
+    if (userId) {
+      account = await resolveClerkKnightoraAccount();
+    } else {
+      const cookieStore = await cookies();
+      const sessionToken = cookieStore.get(getSessionCookieName())?.value;
+      account = await getSessionAccount(sessionToken);
+    }
+
     if (!account?.user) {
       return NextResponse.json({ error: "Please sign in before starting checkout." }, { status: 401 });
     }

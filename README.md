@@ -28,6 +28,19 @@ npm run dev
 
 Then visit `http://localhost:3000` (or the fallback port shown in the terminal if 3000 is in use).
 
+### Clerk sign-in (recommended)
+
+1. Create an application in the [Clerk Dashboard](https://dashboard.clerk.com).
+2. Copy **Publishable key** and **Secret key** into `.env.local` (see `.env.example`):
+   - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+   - `CLERK_SECRET_KEY`
+3. In Clerk → **Domains**, add:
+   - `http://localhost:3000` for local dev
+   - `https://knightora.vercel.app` (and your custom domain when you use one) for production
+4. Sign-in and sign-up routes are `/sign-in` and `/sign-up`.
+
+On Vercel, add the same two Clerk variables in **Project → Settings → Environment Variables**, then redeploy.
+
 ### Optional admin unlock
 
 If you want to enable admin test mode from the UI, set an admin code:
@@ -105,7 +118,7 @@ Then visit `http://localhost:8000`.
 ## Known limitations / incomplete areas
 
 1. Persistence is file-based (`data/app-db.json`), so there is no production database yet.
-2. Authentication uses local session cookies and hashed passwords, but no email verification, password reset, or OAuth.
+2. Sign-in uses **Clerk**; legacy email/password APIs may still exist for older accounts. No production database yet—see persistence note above.
 3. Subscription switching is UI + local state only; no real billing provider is connected.
 4. Chess.com analysis relies on public APIs and recent archives; rate limits and external outages are not fully handled.
 5. Test coverage is missing (no automated unit/integration tests are configured yet).

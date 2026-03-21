@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { UserButton, useAuth, useClerk } from "@clerk/nextjs";
+import Image from "next/image";
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { getTrainingTrack, type TrainingLesson } from "@/data/training";
 import type { ChessProfileResponse } from "@/lib/chesscom";
 import {
@@ -53,8 +56,6 @@ type AccountUser = {
   subscriptionPlan: SubscriptionPlan;
   createdAt: string;
 };
-
-type AuthMode = "login" | "register";
 
 type TrainingSessionState = {
   trackId: string;
@@ -128,6 +129,9 @@ const plans: Array<{
 ];
 
 export function QuizExperience() {
+  const { isLoaded, isSignedIn, userId } = useAuth();
+  const { signOut } = useClerk();
+
   const [profile, setProfile] = useState<QuizProfile>(initialProfile);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [serverResult, setServerResult] = useState<ChessProfileResponse | null>(null);
@@ -136,15 +140,8 @@ export function QuizExperience() {
 
   const [savedDashboard, setSavedDashboard] = useState<SavedDashboard | null>(null);
   const [accountUser, setAccountUser] = useState<AccountUser | null>(null);
-  const [accountBusy, setAccountBusy] = useState(false);
   const [accountError, setAccountError] = useState<string | null>(null);
-  const [authMode, setAuthMode] = useState<AuthMode>("register");
-  const [authForm, setAuthForm] = useState({
-    name: "",
-    email: "",
-    password: "",
-    subscriptionPlan: "free" as SubscriptionPlan,
-  });
+  const [guestSubscriptionPlan, setGuestSubscriptionPlan] = useState<SubscriptionPlan>("free");
   const [adminCodeInput, setAdminCodeInput] = useState("");
   const [adminCodeMessage, setAdminCodeMessage] = useState<string | null>(null);
 
@@ -162,7 +159,8 @@ export function QuizExperience() {
   const activeTrack = trainingTracks.find((track) => track.id === trainingSession.trackId) ?? trainingTracks[0] ?? null;
   const activeLesson = activeTrack?.lessons[trainingSession.lessonIndex] ?? null;
   const progress = activeDashboard?.trainingProgress ?? initialTrainingProgress;
-  const selectedPlan = accountUser?.subscriptionPlan ?? authForm.subscriptionPlan;
+  const selectedPlan = accountUser?.subscriptionPlan ?? guestSubscriptionPlan;
+  const latestDashboardRef = useRef<SavedDashboard | null>(null);
 
   useEffect(() => {
     setHydrated(true);
@@ -183,13 +181,23 @@ export function QuizExperience() {
   }, []);
 
   useEffect(() => {
+    if (isLoaded && isSignedIn && userId) {
+      void loadAccount();
+    }
+  }, [isLoaded, isSignedIn, userId]);
+
+  useEffect(() => {
     if (!hydrated || !activeDashboard) return;
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(activeDashboard));
   }, [activeDashboard, hydrated]);
 
   useEffect(() => {
-    if (!activeDashboard || !accountUser) return;
-    void persistDashboard(activeDashboard);
+    latestDashboardRef.current = activeDashboard;
+  }, [activeDashboard]);
+
+  useEffect(() => {
+    if (!latestDashboardRef.current || !accountUser) return;
+    void persistDashboard(latestDashboardRef.current);
   }, [accountUser, activeDashboard?.savedAt]);
 
   useEffect(() => {
@@ -215,7 +223,7 @@ export function QuizExperience() {
     if (!payload.user) return;
 
     setAccountUser(payload.user);
-    setAuthForm((current) => ({ ...current, subscriptionPlan: payload.user!.subscriptionPlan }));
+    setGuestSubscriptionPlan(payload.user!.subscriptionPlan);
 
     if (payload.dashboard) {
       setSavedDashboard(payload.dashboard);
@@ -226,10 +234,6 @@ export function QuizExperience() {
 
   function updateField<Key extends keyof QuizProfile>(key: Key, value: QuizProfile[Key]) {
     setProfile((current) => ({ ...current, [key]: value }));
-  }
-
-  function updateAuthField<Key extends keyof typeof authForm>(key: Key, value: (typeof authForm)[Key]) {
-    setAuthForm((current) => ({ ...current, [key]: value }));
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -279,45 +283,8 @@ export function QuizExperience() {
     }
   }
 
-  async function handleAuthSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setAccountBusy(true);
-    setAccountError(null);
-
-    try {
-      const endpoint = authMode === "register" ? "/api/account/register" : "/api/account/login";
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(authMode === "register" ? authForm : { email: authForm.email, password: authForm.password }),
-      });
-
-      const payload = (await response.json()) as {
-        user?: AccountUser;
-        dashboard?: SavedDashboard | null;
-        error?: string;
-      };
-
-      if (!response.ok || !payload.user) {
-        throw new Error(payload.error ?? "Unable to sign in.");
-      }
-
-      setAccountUser(payload.user);
-      if (payload.dashboard) {
-        setSavedDashboard(payload.dashboard);
-        setProfile(payload.dashboard.profile);
-        setHasSubmitted(true);
-      } else if (savedDashboard) {
-        await persistDashboard(savedDashboard);
-      }
-    } catch (error) {
-      setAccountError(error instanceof Error ? error.message : "Unable to authenticate account.");
-    } finally {
-      setAccountBusy(false);
-    }
-  }
-
   async function handleLogout() {
+    await signOut({ redirectUrl: "/" });
     await fetch("/api/account/logout", { method: "POST" });
     setAccountUser(null);
   }
@@ -341,7 +308,7 @@ export function QuizExperience() {
   }
 
   async function choosePlan(plan: SubscriptionPlan, adminCode?: string) {
-    updateAuthField("subscriptionPlan", plan);
+    setGuestSubscriptionPlan(plan);
 
     if (!accountUser) return false;
 
@@ -471,6 +438,7 @@ export function QuizExperience() {
                 Dashboard
               </a>
             ) : null}
+            {isLoaded && isSignedIn ? <UserButton /> : null}
           </div>
         </nav>
 
@@ -558,101 +526,74 @@ export function QuizExperience() {
           <div className={styles.sectionHeading}>
             <p className={styles.eyebrow}>Account</p>
             <h2>Save dashboards across devices with a real account.</h2>
+            <p className={styles.lede}>
+              Sign in with Clerk — email, Google, GitHub, or other providers you enable in the Clerk dashboard.
+            </p>
           </div>
           <div className={styles.accountGrid}>
-            <form className={styles.accountCard} onSubmit={handleAuthSubmit}>
-              <div className={styles.accountTabs}>
-                <button
-                  type="button"
-                  className={`${styles.tabButton} ${authMode === "register" ? styles.tabButtonActive : ""}`}
-                  onClick={() => setAuthMode("register")}
-                >
-                  Create account
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.tabButton} ${authMode === "login" ? styles.tabButtonActive : ""}`}
-                  onClick={() => setAuthMode("login")}
-                >
-                  Sign in
-                </button>
-              </div>
-
-              {authMode === "register" ? (
-                <label className={styles.fieldLabel}>
-                  Name
-                  <input value={authForm.name} onChange={(event) => updateAuthField("name", event.target.value)} />
-                </label>
-              ) : null}
-
-              <label className={styles.fieldLabel}>
-                Email
-                <input
-                  type="email"
-                  value={authForm.email}
-                  onChange={(event) => updateAuthField("email", event.target.value)}
-                />
-              </label>
-
-              <label className={styles.fieldLabel}>
-                Password
-                <input
-                  type="password"
-                  value={authForm.password}
-                  onChange={(event) => updateAuthField("password", event.target.value)}
-                />
-              </label>
-
-              {authMode === "register" ? (
-                <label className={styles.fieldLabel}>
-                  Starting plan
-                  <select
-                    value={authForm.subscriptionPlan}
-                    onChange={(event) => updateAuthField("subscriptionPlan", event.target.value as SubscriptionPlan)}
-                  >
-                    <option value="free">Free</option>
-                    <option value="starter">Starter</option>
-                    <option value="club">Club</option>
-                    <option value="pro">Pro</option>
-                  </select>
-                </label>
-              ) : null}
-
-              {accountError ? <p className={styles.accountError}>{accountError}</p> : null}
-
-              <button type="submit" className={`${styles.button} ${styles.buttonPrimary}`}>
-                {accountBusy ? "Working..." : authMode === "register" ? "Create account" : "Sign in"}
-              </button>
-            </form>
-
             <article className={styles.accountCard}>
-              <p className={styles.metricLabel}>Current account status</p>
-              {accountUser ? (
+              <p className={styles.metricLabel}>Sign in</p>
+              {!isLoaded ? (
+                <p>Loading sign-in…</p>
+              ) : !isSignedIn ? (
                 <>
-                  <h3>{accountUser.name}</h3>
-                  <p>{accountUser.email}</p>
-                  <p>Plan: {formatPlanLabel(accountUser.subscriptionPlan)}</p>
-                  <label className={styles.fieldLabel}>
-                    Admin access code
-                    <input
-                      type="password"
-                      value={adminCodeInput}
-                      onChange={(event) => setAdminCodeInput(event.target.value)}
-                      placeholder="Enter admin code"
-                    />
-                  </label>
-                  <button type="button" className={`${styles.button} ${styles.buttonSecondary}`} onClick={() => void applyAdminCode()}>
-                    Apply admin code
-                  </button>
-                  {adminCodeMessage ? <p>{adminCodeMessage}</p> : null}
-                  <button type="button" className={`${styles.button} ${styles.buttonSecondary}`} onClick={() => void handleLogout()}>
-                    Sign out
-                  </button>
+                  <h3>Use one click sign-in</h3>
+                  <p>Knightora uses Clerk so you don&apos;t manage another password here. After you sign in, your repertoire can sync to the server when you save.</p>
+                  <div className={styles.heroActions} style={{ marginTop: 16 }}>
+                    <Link href="/sign-in" className={`${styles.button} ${styles.buttonPrimary}`}>
+                      Sign in
+                    </Link>
+                    <Link href="/sign-up" className={`${styles.button} ${styles.buttonSecondary}`}>
+                      Create account
+                    </Link>
+                  </div>
                 </>
               ) : (
                 <>
+                  <h3>You&apos;re signed in</h3>
+                  <p>Use the profile button in the top bar to manage your Clerk account or sign out.</p>
+                  <div style={{ marginTop: 12 }}>
+                    <UserButton />
+                  </div>
+                </>
+              )}
+              {accountError ? <p className={styles.accountError}>{accountError}</p> : null}
+            </article>
+
+            <article className={styles.accountCard}>
+              <p className={styles.metricLabel}>Current account status</p>
+              {!isLoaded ? (
+                <p>Loading…</p>
+              ) : isSignedIn ? (
+                accountUser ? (
+                  <>
+                    <h3>{accountUser.name}</h3>
+                    <p>{accountUser.email}</p>
+                    <p>Plan: {formatPlanLabel(accountUser.subscriptionPlan)}</p>
+                    <label className={styles.fieldLabel}>
+                      Admin access code
+                      <input
+                        type="password"
+                        value={adminCodeInput}
+                        onChange={(event) => setAdminCodeInput(event.target.value)}
+                        placeholder="Enter admin code"
+                      />
+                    </label>
+                    <button type="button" className={`${styles.button} ${styles.buttonSecondary}`} onClick={() => void applyAdminCode()}>
+                      Apply admin code
+                    </button>
+                    {adminCodeMessage ? <p>{adminCodeMessage}</p> : null}
+                    <button type="button" className={`${styles.button} ${styles.buttonSecondary}`} onClick={() => void handleLogout()}>
+                      Sign out
+                    </button>
+                  </>
+                ) : (
+                  <p>Loading your Knightora profile…</p>
+                )
+              ) : (
+                <>
                   <h3>Not signed in yet</h3>
-                  <p>Create an account to keep your repertoire and training progress backed by Knightora instead of only this browser.</p>
+                  <p>Sign in above to keep your repertoire and training progress backed by the server instead of only this browser.</p>
                 </>
               )}
             </article>
@@ -1088,11 +1029,14 @@ function BoardLessonView({
                 disabled={revealed}
               >
                 {piece ? (
-                  <img
+                  <Image
                     src={getNeoPieceSrc(piece)}
                     alt={`Piece ${piece}`}
                     className={styles.boardPieceImage}
                     draggable={false}
+                    width={56}
+                    height={56}
+                    unoptimized
                   />
                 ) : null}
                 {file === "a" ? <span className={styles.boardRank}>{rank}</span> : null}
