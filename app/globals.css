@@ -1,0 +1,53 @@
+:root {
+  --bg: #f4efe4;
+  --panel: rgba(255, 252, 246, 0.84);
+  --panel-strong: #fffaf0;
+  --text: #1e1d1a;
+  --muted: #595448;
+  --border: rgba(30, 29, 26, 0.12);
+  --brand: #8f3b2e;
+  --accent: #264653;
+  --shadow: 0 20px 70px rgba(39, 34, 24, 0.14);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.5;
+  color: var(--text);
+  background:
+    radial-gradient(circle at top left, rgba(143, 59, 46, 0.16), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(38, 70, 83, 0.18), transparent 32%),
+    linear-gradient(180deg, #f7f1e6 0%, var(--bg) 100%);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(30, 29, 26, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(30, 29, 26, 0.03) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: radial-gradient(circle at center, black, transparent 85%);
+}
+
+a {
+  color: inherit;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Knightora | Find Your Repertoire</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Spectral:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <nav class="topbar">
+          <div class="brand">
+            <span class="brand-mark">K</span>
+            <span class="brand-name">Knightora</span>
+          </div>
+          <a href="#quiz" class="ghost-link">Try the quiz</a>
+        </nav>
+
+        <div class="hero-grid">
+          <section class="hero-copy">
+            <p class="eyebrow">Find the opening repertoire that fits how you play</p>
+            <h1>Stop studying everything. Start playing what fits.</h1>
+            <p class="lede">
+              Knightora helps chess players cut through the opening rabbit hole with a short
+              style quiz, optional Chess.com analysis, and a focused repertoire recommendation:
+              one opening with White and two with Black.
+            </p>
+            <div class="hero-actions">
+              <a href="#quiz" class="button button-primary">Build my repertoire</a>
+              <a href="#how-it-works" class="button button-secondary">See how it works</a>
+            </div>
+            <ul class="signal-list">
+              <li>5-minute onboarding</li>
+              <li>1 White opening + 2 Black openings</li>
+              <li>Built for players who want less noise</li>
+            </ul>
+          </section>
+
+          <aside class="hero-card">
+            <p class="card-label">Example outcome</p>
+            <div class="recommendation-preview">
+              <div>
+                <span class="piece-tag">White</span>
+                <h3>Italian Game</h3>
+                <p>Fits players who want initiative without drowning in theory.</p>
+              </div>
+              <div>
+                <span class="piece-tag piece-tag-dark">Black vs 1.e4</span>
+                <h3>Caro-Kann Defense</h3>
+                <p>Solid structure, low chaos, and forgiving plans for improving players.</p>
+              </div>
+              <div>
+                <span class="piece-tag piece-tag-dark">Black vs 1.d4</span>
+                <h3>Queen's Gambit Declined</h3>
+                <p>Stable positions, clear plans, and fewer tactical landmines.</p>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </header>
+
+      <main>
+        <section id="how-it-works" class="info-panel">
+          <div class="section-heading">
+            <p class="eyebrow">How Knightora works</p>
+            <h2>A small, personal repertoire instead of endless theory.</h2>
+          </div>
+          <div class="steps-grid">
+            <article>
+              <span>01</span>
+              <h3>Take a quick style quiz</h3>
+              <p>
+                Tell us how you think you play: tactical or positional, sharp or solid, heavy
+                theory or low maintenance.
+              </p>
+            </article>
+            <article>
+              <span>02</span>
+              <h3>Add your Chess.com username</h3>
+              <p>
+                Optional game history helps compare your self-image with your actual habits and
+                recurring positions.
+              </p>
+            </article>
+            <article>
+              <span>03</span>
+              <h3>Get a focused opening path</h3>
+              <p>
+                Knightora recommends one White opening and two Black openings with fit reasoning,
+                study priorities, and what to ignore for now.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <section id="quiz" class="quiz-panel">
+          <div class="section-heading">
+            <p class="eyebrow">Style quiz</p>
+            <h2>Find your first Knightora repertoire</h2>
+          </div>
+
+          <form id="knightora-form" class="quiz-form">
+            <div class="question-block">
+              <label for="rating">Your current rating</label>
+              <select id="rating" name="rating" required>
+                <option value="">Choose one</option>
+                <option value="beginner">Under 800</option>
+                <option value="developing">800-1199</option>
+                <option value="improving">1200-1599</option>
+                <option value="advanced">1600+</option>
+              </select>
+            </div>
+
+            <div class="question-block">
+              <p>1. What kind of positions do you enjoy most?</p>
+              <div class="option-grid">
+                <label><input type="radio" name="positionType" value="open" required /> Open and active</label>
+                <label><input type="radio" name="positionType" value="mixed" /> A healthy mix</label>
+                <label><input type="radio" name="positionType" value="closed" /> Closed and strategic</label>
+              </div>
+            </div>
+
+            <div class="question-block">
+              <p>2. How much opening theory are you willing to learn?</p>
+              <div class="option-grid">
+                <label><input type="radio" name="theory" value="low" required /> Very little</label>
+                <label><input type="radio" name="theory" value="medium" /> Some, if worth it</label>
+                <label><input type="radio" name="theory" value="high" /> I do not mind depth</label>
+              </div>
+            </div>
+
+            <div class="question-block">
+              <p>3. What sounds more like you?</p>
+              <div class="option-grid">
+                <label><input type="radio" name="risk" value="sharp" required /> I like pressure and attacks</label>
+                <label><input type="radio" name="risk" value="balanced" /> I can do either</label>
+                <label><input type="radio" name="risk" value="solid" /> I want reliable positions</label>
+              </div>
+            </div>
+
+            <div class="question-block">
+              <p>4. What time control do you play most?</p>
+              <div class="option-grid">
+                <label><input type="radio" name="timeControl" value="bullet" required /> Bullet / blitz</label>
+                <label><input type="radio" name="timeControl" value="rapid" /> Rapid</label>
+                <label><input type="radio" name="timeControl" value="classical" /> Longer games</label>
+              </div>
+            </div>
+
+            <div class="question-block">
+              <p>5. What do you want from your openings right now?</p>
+              <div class="option-grid">
+                <label><input type="radio" name="goal" value="initiative" required /> Early initiative</label>
+                <label><input type="radio" name="goal" value="clarity" /> Simple plans</label>
+                <label><input type="radio" name="goal" value="counterplay" /> Strong counterplay</label>
+              </div>
+            </div>
+
+            <div class="question-block">
+              <p>6. Optional Chess.com username</p>
+              <label for="username" class="assistive-label">
+                We will use this later for live game analysis. For now this starter uses the name
+                as a placeholder input.
+              </label>
+              <input
+                id="username"
+                name="username"
+                type="text"
+                placeholder="e.g. hikaru"
+                autocomplete="off"
+              />
+            </div>
+
+            <button type="submit" class="button button-primary button-wide">
+              Get my recommendations
+            </button>
+          </form>
+        </section>
+
+        <section id="results" class="results-panel hidden" aria-live="polite">
+          <div class="section-heading">
+            <p class="eyebrow">Your repertoire</p>
+            <h2>Recommended openings for your current style</h2>
+          </div>
+
+          <div id="results-summary" class="results-summary"></div>
+          <div id="recommendations" class="recommendation-grid"></div>
+          <div id="study-plan" class="study-plan"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./script.js"></script>
+  </body>
+</html>

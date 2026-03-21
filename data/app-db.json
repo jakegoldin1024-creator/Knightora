@@ -1,0 +1,342 @@
+{
+  "users": [
+    {
+      "id": "100a52ae-cb3d-47ba-ad3b-89bb1a2ace29",
+      "name": "Jake",
+      "email": "jakegoldin1024@gmail.com",
+      "passwordHash": "72d1036878c2c442c7734e8e3b77681c37f30550ac2a45160e9863f2fa3b96d8",
+      "salt": "247570a4480590fe31aca3152ff6bc80",
+      "subscriptionPlan": "admin",
+      "dashboard": {
+        "profile": {
+          "rating": "developing",
+          "positionType": "mixed",
+          "theory": "medium",
+          "risk": "balanced",
+          "timeControl": "rapid",
+          "goal": "clarity",
+          "username": "pandachess1024"
+        },
+        "repertoire": {
+          "white": {
+            "name": "Queen's Gambit",
+            "key": "qg",
+            "tags": [
+              "closed",
+              "clarity",
+              "medium",
+              "solid",
+              "classical",
+              "advanced"
+            ],
+            "summary": "Strategic pressure with long-term structure and central control.",
+            "why": "Great for players who enjoy strategic buildup and want an opening with a long shelf life.",
+            "study": [
+              "Understand the isolated queen pawn structures.",
+              "Study minority attack themes.",
+              "Review model games from classical play."
+            ],
+            "score": 68,
+            "confidence": 84,
+            "evidence": [
+              "Matches your stated goal: clear, repeatable plans.",
+              "Fits your theory tolerance: medium.",
+              "Your recent Chess.com games already show nearby opening patterns."
+            ]
+          },
+          "blackE4": {
+            "name": "Scandinavian Defense",
+            "key": "scandinavian",
+            "tags": [
+              "open",
+              "clarity",
+              "low",
+              "balanced",
+              "bullet",
+              "beginner"
+            ],
+            "summary": "Simple development and direct plans, especially useful if you value quick practical positions.",
+            "why": "It limits study burden and gets you playing recognizable structures fast.",
+            "study": [
+              "Learn one queen retreat setup.",
+              "Practice development speed.",
+              "Study common traps after 1.e4 d5 2.exd5 Qxd5."
+            ],
+            "score": 100,
+            "confidence": 84,
+            "evidence": [
+              "Matches your stated goal: clear, repeatable plans.",
+              "Lines up with your risk preference: balanced.",
+              "Your recent Chess.com games already show nearby opening patterns."
+            ]
+          },
+          "blackD4": {
+            "name": "Queen's Gambit Declined",
+            "key": "qgd",
+            "tags": [
+              "closed",
+              "clarity",
+              "medium",
+              "solid",
+              "classical",
+              "advanced"
+            ],
+            "summary": "Reliable development and strong structure with plans that scale as you improve.",
+            "why": "A strong anchor defense for players who value consistency and strategic understanding.",
+            "study": [
+              "Learn Orthodox setup basics.",
+              "Understand c5 breaks.",
+              "Review hanging pawn structures."
+            ],
+            "score": 54,
+            "confidence": 84,
+            "evidence": [
+              "Matches your stated goal: clear, repeatable plans.",
+              "Fits your theory tolerance: medium.",
+              "Your recent Chess.com games already show nearby opening patterns."
+            ]
+          }
+        },
+        "insights": {
+          "username": "pandachess1024",
+          "gamesAnalyzed": 120,
+          "archivesChecked": 3,
+          "detectedTimeControl": "rapid",
+          "styleHints": {
+            "positionType": "open",
+            "risk": "solid",
+            "theory": "high",
+            "goal": "counterplay"
+          },
+          "openingBoosts": {
+            "qg": 56,
+            "qgd": 42,
+            "scandinavian": 86,
+            "london": 2,
+            "slav": 16,
+            "kid": 4
+          },
+          "whiteTopOpenings": [
+            {
+              "opening": "Queens Gambit Accepted Old Variation",
+              "games": 7,
+              "wins": 5,
+              "draws": 0,
+              "losses": 2,
+              "scoreRate": 0.7142857142857143,
+              "weightedScore": 0.8492857142857143,
+              "averageOpponentRating": 1448
+            },
+            {
+              "opening": "Englund Gambit 2.dxe5 Nc6 3.Nf3 Qe7",
+              "games": 3,
+              "wins": 2,
+              "draws": 1,
+              "losses": 0,
+              "scoreRate": 0.8333333333333334,
+              "weightedScore": 0.9233333333333333,
+              "averageOpponentRating": 1470
+            },
+            {
+              "opening": "English Opening Anglo Indian Queens Knight Variation 2...e6 3.Nf3 d5 4.d4",
+              "games": 3,
+              "wins": 2,
+              "draws": 0,
+              "losses": 1,
+              "scoreRate": 0.6666666666666666,
+              "weightedScore": 0.7566666666666666,
+              "averageOpponentRating": 1385
+            }
+          ],
+          "blackVsE4TopDefenses": [
+            {
+              "opening": "Scandinavian Defense Mieses Kotrc Main Line",
+              "games": 8,
+              "wins": 6,
+              "draws": 0,
+              "losses": 2,
+              "scoreRate": 0.75,
+              "weightedScore": 0.8926466250649041,
+              "averageOpponentRating": 1459
+            },
+            {
+              "opening": "Scandinavian Defense 2.e5",
+              "games": 8,
+              "wins": 3,
+              "draws": 1,
+              "losses": 4,
+              "scoreRate": 0.4375,
+              "weightedScore": 0.5801466250649041,
+              "averageOpponentRating": 1431
+            },
+            {
+              "opening": "Scandinavian Defense Mieses Kotrc Main Line 4.d4 c6",
+              "games": 5,
+              "wins": 1,
+              "draws": 0,
+              "losses": 4,
+              "scoreRate": 0.2,
+              "weightedScore": 0.31632331253245205,
+              "averageOpponentRating": 1420
+            }
+          ],
+          "blackVsD4TopDefenses": [
+            {
+              "opening": "Queens Pawn Opening Chigorin Variation 2...Nf6 3.Bf4 a6 4.e3",
+              "games": 2,
+              "wins": 2,
+              "draws": 0,
+              "losses": 0,
+              "scoreRate": 1,
+              "weightedScore": 1.071323312532452,
+              "averageOpponentRating": 1409
+            },
+            {
+              "opening": "English Opening Caro Kann Defensive System",
+              "games": 2,
+              "wins": 1,
+              "draws": 0,
+              "losses": 1,
+              "scoreRate": 0.5,
+              "weightedScore": 0.571323312532452,
+              "averageOpponentRating": 1477
+            },
+            {
+              "opening": "London System 3...Bf5 4.e3 e6",
+              "games": 1,
+              "wins": 1,
+              "draws": 0,
+              "losses": 0,
+              "scoreRate": 1,
+              "weightedScore": 1.045,
+              "averageOpponentRating": 1350
+            }
+          ],
+          "whiteBestScoring": [
+            {
+              "opening": "Queens Gambit Declined Semi Tarrasch Pillsbury Variation",
+              "games": 2,
+              "wins": 2,
+              "draws": 0,
+              "losses": 0,
+              "scoreRate": 1,
+              "weightedScore": 1.071323312532452,
+              "averageOpponentRating": 1348
+            },
+            {
+              "opening": "Old Benoni Defense 2.d5 e6",
+              "games": 1,
+              "wins": 1,
+              "draws": 0,
+              "losses": 0,
+              "scoreRate": 1,
+              "weightedScore": 1.045,
+              "averageOpponentRating": 1342
+            },
+            {
+              "opening": "Queens Gambit Declined Albin Countergambit 3.dxe5 d4 4.Nf3 Nc6 5.a3",
+              "games": 1,
+              "wins": 1,
+              "draws": 0,
+              "losses": 0,
+              "scoreRate": 1,
+              "weightedScore": 1.045,
+              "averageOpponentRating": 1368
+            }
+          ],
+          "blackVsE4BestScoring": [
+            {
+              "opening": "Scandinavian Defense Closed 2...dxe4 3.Nxe4 Bf5",
+              "games": 1,
+              "wins": 1,
+              "draws": 0,
+              "losses": 0,
+              "scoreRate": 1,
+              "weightedScore": 1.045,
+              "averageOpponentRating": 1411
+            },
+            {
+              "opening": "Scandinavian Defense Mieses Kotrc Main Line...5.Nf3 Bf5 6.Bd2 c6 7.Bc4",
+              "games": 1,
+              "wins": 1,
+              "draws": 0,
+              "losses": 0,
+              "scoreRate": 1,
+              "weightedScore": 1.045,
+              "averageOpponentRating": 1491
+            },
+            {
+              "opening": "Scandinavian Defense Mieses Kotrc Main Line",
+              "games": 8,
+              "wins": 6,
+              "draws": 0,
+              "losses": 2,
+              "scoreRate": 0.75,
+              "weightedScore": 0.8926466250649041,
+              "averageOpponentRating": 1459
+            }
+          ],
+          "blackVsD4BestScoring": [
+            {
+              "opening": "Queens Pawn Opening Chigorin Variation 2...Nf6 3.Bf4 a6 4.e3",
+              "games": 2,
+              "wins": 2,
+              "draws": 0,
+              "losses": 0,
+              "scoreRate": 1,
+              "weightedScore": 1.071323312532452,
+              "averageOpponentRating": 1409
+            },
+            {
+              "opening": "London System 3...Bf5 4.e3 e6",
+              "games": 1,
+              "wins": 1,
+              "draws": 0,
+              "losses": 0,
+              "scoreRate": 1,
+              "weightedScore": 1.045,
+              "averageOpponentRating": 1350
+            },
+            {
+              "opening": "Slav Defense 3.e3 Nf6",
+              "games": 1,
+              "wins": 1,
+              "draws": 0,
+              "losses": 0,
+              "scoreRate": 1,
+              "weightedScore": 1.045,
+              "averageOpponentRating": 1426
+            }
+          ],
+          "recommendationReasons": {
+            "white": "You play Queens Gambit Accepted Old Variation most, but your best recent results come from Queens Gambit Declined Semi Tarrasch Pillsbury Variation.",
+            "blackE4": "You play Scandinavian Defense Mieses Kotrc Main Line most, but your best recent results come from Scandinavian Defense Closed 2...dxe4 3.Nxe4 Bf5.",
+            "blackD4": "Queens Pawn Opening Chigorin Variation 2...Nf6 3.Bf4 a6 4.e3 is both familiar and productive in your recent games."
+          },
+          "summary": [
+            "Analyzed 120 recent public games across 3 Chess.com archive months.",
+            "White: most used is Queens Gambit Accepted Old Variation (7 games), but best scoring is Queens Gambit Declined Semi Tarrasch Pillsbury Variation (100% score rate).",
+            "Black vs 1.e4: most used is Scandinavian Defense Mieses Kotrc Main Line (8 games), but best scoring is Scandinavian Defense Closed 2...dxe4 3.Nxe4 Bf5 (100% score rate).",
+            "Black vs 1.d4: strongest recent signal is Queens Pawn Opening Chigorin Variation 2...Nf6 3.Bf4 a6 4.e3 (2 games, 100% score rate)."
+          ]
+        },
+        "savedAt": "2026-03-20T19:49:38.193Z",
+        "trainingProgress": {
+          "completedLessons": [],
+          "xp": 0,
+          "streak": 0,
+          "lastTrainingDate": null,
+          "lessonStats": {}
+        }
+      },
+      "createdAt": "2026-03-20T19:48:57.815Z"
+    }
+  ],
+  "sessions": [
+    {
+      "token": "12d6950c-37fd-432d-9258-f9e2918929ab",
+      "userId": "100a52ae-cb3d-47ba-ad3b-89bb1a2ace29",
+      "createdAt": "2026-03-20T19:49:07.062Z"
+    }
+  ]
+}
