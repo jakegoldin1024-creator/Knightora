@@ -4,6 +4,7 @@ import { UserButton, useAuth, useClerk } from "@clerk/nextjs";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { getLearningPath, type LearningPath, type TrainingUnit } from "@/data/training";
 import { getTrainingTrack, type TrainingLesson } from "@/data/training";
 import type { ChessProfileResponse } from "@/lib/chesscom";
 import {
@@ -35,6 +36,7 @@ type LessonStat = {
 
 type TrainingProgress = {
   completedLessons: string[];
+  completedUnits: string[];
   xp: number;
   streak: number;
   lastTrainingDate: string | null;
@@ -59,9 +61,14 @@ type AccountUser = {
 
 type TrainingSessionState = {
   trackId: string;
+  unitIndex: number;
   lessonIndex: number;
+  inQuiz: boolean;
+  quizIndex: number;
   selectedChoice: string | null;
   revealed: boolean;
+  hearts: number;
+  sessionXp: number;
 };
 
 const STORAGE_KEY = "knightora-dashboard-v2";
@@ -78,6 +85,7 @@ const initialProfile: QuizProfile = {
 
 const initialTrainingProgress: TrainingProgress = {
   completedLessons: [],
+  completedUnits: [],
   xp: 0,
   streak: 0,
   lastTrainingDate: null,
@@ -146,11 +154,18 @@ export function QuizExperience() {
   const [adminCodeMessage, setAdminCodeMessage] = useState<string | null>(null);
 
   const [hydrated, setHydrated] = useState(false);
+  const [billingBanner, setBillingBanner] = useState<"success" | "cancel" | null>(null);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [trainingSession, setTrainingSession] = useState<TrainingSessionState>({
     trackId: "white",
+    unitIndex: 0,
     lessonIndex: 0,
+    inQuiz: false,
+    quizIndex: 0,
     selectedChoice: null,
     revealed: false,
+    hearts: 3,
+    sessionXp: 0,
   });
 
   const fallbackRepertoire = getRepertoire(profile);
@@ -165,10 +180,21 @@ export function QuizExperience() {
   useEffect(() => {
     setHydrated(true);
 
+    const params = new URLSearchParams(window.location.search);
+    const billing = params.get("billing");
+    if (billing === "success" || billing === "cancel") {
+      setBillingBanner(billing);
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+
     try {
       const saved = window.localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved) as SavedDashboard;
+        // Migrate old progress that lacks completedUnits
+        if (!parsed.trainingProgress.completedUnits) {
+          parsed.trainingProgress.completedUnits = [];
+        }
         setSavedDashboard(parsed);
         setProfile(parsed.profile);
         setHasSubmitted(true);
@@ -209,9 +235,14 @@ export function QuizExperience() {
 
       return {
         trackId: activeTrack.id,
+        unitIndex: 0,
         lessonIndex: 0,
+        inQuiz: false,
+        quizIndex: 0,
         selectedChoice: null,
         revealed: false,
+        hearts: 3,
+        sessionXp: 0,
       };
     });
   }, [activeTrack]);
@@ -330,23 +361,29 @@ export function QuizExperience() {
 
   async function startCheckout(plan: SubscriptionPlan) {
     if (!accountUser) {
-      setAccountError("Please create an account or sign in before checkout.");
+      setAccountError("Please sign in before checkout.");
       return;
     }
 
-    const response = await fetch("/api/billing/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ plan }),
-    });
+    setCheckoutLoading(true);
 
-    const payload = (await response.json()) as { url?: string; error?: string };
-    if (!response.ok || !payload.url) {
-      setAccountError(payload.error ?? "Unable to start billing checkout.");
-      return;
+    try {
+      const response = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan }),
+      });
+
+      const payload = (await response.json()) as { url?: string; error?: string };
+      if (!response.ok || !payload.url) {
+        setAccountError(payload.error ?? "Unable to start billing checkout.");
+        return;
+      }
+
+      window.location.href = payload.url;
+    } finally {
+      setCheckoutLoading(false);
     }
-
-    window.location.href = payload.url;
   }
 
   async function applyAdminCode() {
@@ -372,9 +409,14 @@ export function QuizExperience() {
   function beginTrack(trackId: string) {
     setTrainingSession({
       trackId,
+      unitIndex: 0,
       lessonIndex: 0,
+      inQuiz: false,
+      quizIndex: 0,
       selectedChoice: null,
       revealed: false,
+      hearts: 3,
+      sessionXp: 0,
     });
   }
 
@@ -411,7 +453,7 @@ export function QuizExperience() {
   function advanceLesson() {
     if (!activeTrack) return;
     setTrainingSession((current) => ({
-      trackId: current.trackId,
+      ...current,
       lessonIndex: Math.min(current.lessonIndex + 1, activeTrack.lessons.length - 1),
       selectedChoice: null,
       revealed: false,
@@ -488,11 +530,22 @@ export function QuizExperience() {
       </header>
 
       <main>
+        {billingBanner ? (
+          <div className={`${styles.billingBanner} ${billingBanner === "success" ? styles.billingBannerSuccess : styles.billingBannerCancel}`}>
+            {billingBanner === "success" ? (
+              <p><strong>Subscription activated.</strong> Your plan has been updated. Thank you for supporting Knightora.</p>
+            ) : (
+              <p><strong>Checkout cancelled.</strong> No charge was made. You can subscribe any time from the plans section.</p>
+            )}
+            <button type="button" className={styles.billingBannerClose} onClick={() => setBillingBanner(null)}>✕</button>
+          </div>
+        ) : null}
+
         <section id="plans" className={styles.panel}>
           <div className={styles.sectionHeading}>
             <p className={styles.eyebrow}>Plans and value</p>
             <h2>Start free, then support if you find it useful.</h2>
-            <p>Supporter tiers currently fund development. Billing is not wired yet, so this section explains value clearly.</p>
+            <p>Supporter tiers fund development. Paid plans use Stripe checkout — secure, no password required.</p>
           </div>
           <div className={styles.pricingGrid}>
             {plans
@@ -513,9 +566,16 @@ export function QuizExperience() {
                 <button
                   type="button"
                   className={`${styles.button} ${styles.buttonSecondary}`}
+                  disabled={checkoutLoading}
                   onClick={() => void (plan.id === "starter" || plan.id === "club" || plan.id === "pro" ? startCheckout(plan.id) : choosePlan(plan.id))}
                 >
-                  {selectedPlan === plan.id ? "Selected plan" : plan.id === "starter" || plan.id === "club" || plan.id === "pro" ? "Checkout" : "Use this plan"}
+                  {selectedPlan === plan.id
+                    ? "Current plan"
+                    : checkoutLoading && (plan.id === "starter" || plan.id === "club" || plan.id === "pro")
+                    ? "Redirecting…"
+                    : plan.id === "starter" || plan.id === "club" || plan.id === "pro"
+                    ? "Subscribe"
+                    : "Use this plan"}
                 </button>
               </article>
             ))}
@@ -1244,6 +1304,7 @@ function applyLessonAttempt(progress: TrainingProgress, lessonId: string, wasCor
 
   return {
     completedLessons,
+    completedUnits: progress.completedUnits ?? [],
     xp: progress.xp + (wasCorrect ? 12 : 2),
     streak,
     lastTrainingDate: today,
