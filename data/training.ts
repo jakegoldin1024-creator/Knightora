@@ -599,6 +599,726 @@ export const trainingCatalog: Record<string, TrainingTrack> = {
   },
 };
 
+// ─── Duolingo-style learning path types ───────────────────────────────────────
+
+export type TrainingUnit = {
+  id: string;
+  title: string;
+  description: string;
+  lessons: TrainingLesson[];
+  checkpointQuiz: TrainingLesson[];
+};
+
+export type LearningPath = {
+  headline: string;
+  units: TrainingUnit[];
+};
+
+// ─── Learning paths ────────────────────────────────────────────────────────────
+
+export const learningPaths: Record<string, LearningPath> = {
+  italian: {
+    headline: "Build calm attacking habits without drowning in theory.",
+    units: [
+      {
+        id: "italian-u1",
+        title: "The Opening Setup",
+        description: "Learn the key moves and why the bishop belongs on c4.",
+        lessons: [
+          {
+            id: "italian-u1-l1",
+            title: "Develop the Italian bishop",
+            focus: "Core setup",
+            prompt: "After 1.e4 e5 2.Nf3 Nc6, develop White's king bishop to its ideal square.",
+            choices: [],
+            answer: "c4",
+            explanation:
+              "Bc4 is the move that defines the Italian Game. The bishop targets f7 — the weakest point near Black's king — and sets up future pressure along the a2–g8 diagonal.",
+            board: {
+              instruction: "Tap the destination square for the bishop on f1.",
+              sourceSquare: "f1",
+              targetSquare: "c4",
+              pieces: [
+                { square: "e1", piece: "K" }, { square: "d1", piece: "Q" },
+                { square: "a1", piece: "R" }, { square: "h1", piece: "R" },
+                { square: "c1", piece: "B" }, { square: "f1", piece: "B" },
+                { square: "b1", piece: "N" }, { square: "f3", piece: "N" },
+                { square: "a2", piece: "P" }, { square: "b2", piece: "P" },
+                { square: "c2", piece: "P" }, { square: "d2", piece: "P" },
+                { square: "e4", piece: "P" }, { square: "f2", piece: "P" },
+                { square: "g2", piece: "P" }, { square: "h2", piece: "P" },
+                { square: "e8", piece: "k" }, { square: "d8", piece: "q" },
+                { square: "a8", piece: "r" }, { square: "h8", piece: "r" },
+                { square: "c8", piece: "b" }, { square: "f8", piece: "b" },
+                { square: "c6", piece: "n" }, { square: "g8", piece: "n" },
+                { square: "a7", piece: "p" }, { square: "b7", piece: "p" },
+                { square: "c7", piece: "p" }, { square: "d7", piece: "p" },
+                { square: "e5", piece: "p" }, { square: "f7", piece: "p" },
+                { square: "g7", piece: "p" }, { square: "h7", piece: "p" },
+              ],
+            },
+          },
+          {
+            id: "italian-u1-l2",
+            title: "Why c4 — not d3?",
+            focus: "Core setup",
+            prompt: "The bishop goes to c4 rather than d3 or e2 because it…",
+            choices: [
+              "Attacks f7 immediately and controls key central squares",
+              "Blocks the d-pawn so White can focus on the kingside",
+              "Avoids future trades and simplifies the position",
+            ],
+            answer: "Attacks f7 immediately and controls key central squares",
+            explanation:
+              "f7 is guarded only by the king. Bc4 aims directly at that soft spot, enabling threats like Ng5 or tactical shots after Nxe5. A passive square like d3 wastes the bishop's diagonal power.",
+          },
+          {
+            id: "italian-u1-l3",
+            title: "Play d3 — the quiet choice",
+            focus: "Core setup",
+            prompt: "After 1.e4 e5 2.Nf3 Nc6 3.Bc4 Bc5 4.c3 Nf6, White's steadying pawn move is…",
+            choices: [],
+            answer: "d3",
+            explanation:
+              "d3 signals the Giuoco Pianissimo — the 'very quiet game.' White stabilises the center and prepares a slow kingside buildup with Nbd2, Re1, and Nf1–g3 rather than the sharp d4 central fight.",
+            board: {
+              instruction: "Tap the destination square for the pawn on d2.",
+              sourceSquare: "d2",
+              targetSquare: "d3",
+              pieces: [
+                { square: "e1", piece: "K" }, { square: "d1", piece: "Q" },
+                { square: "a1", piece: "R" }, { square: "h1", piece: "R" },
+                { square: "c1", piece: "B" }, { square: "c4", piece: "B" },
+                { square: "b1", piece: "N" }, { square: "f3", piece: "N" },
+                { square: "a2", piece: "P" }, { square: "b2", piece: "P" },
+                { square: "c3", piece: "P" }, { square: "d2", piece: "P" },
+                { square: "e4", piece: "P" }, { square: "f2", piece: "P" },
+                { square: "g2", piece: "P" }, { square: "h2", piece: "P" },
+                { square: "e8", piece: "k" }, { square: "d8", piece: "q" },
+                { square: "a8", piece: "r" }, { square: "h8", piece: "r" },
+                { square: "c5", piece: "b" }, { square: "c8", piece: "b" },
+                { square: "c6", piece: "n" }, { square: "f6", piece: "n" },
+                { square: "a7", piece: "p" }, { square: "b7", piece: "p" },
+                { square: "c7", piece: "p" }, { square: "d7", piece: "p" },
+                { square: "e5", piece: "p" }, { square: "f7", piece: "p" },
+                { square: "g7", piece: "p" }, { square: "h7", piece: "p" },
+              ],
+            },
+          },
+        ],
+        checkpointQuiz: [
+          {
+            id: "italian-u1-q1",
+            title: "Quiz: Italian target",
+            focus: "Core setup",
+            prompt: "Which square does the Italian bishop on c4 threaten most directly?",
+            choices: ["f7 — guarded only by Black's king", "e5 — the center pawn", "d5 — the central outpost"],
+            answer: "f7 — guarded only by Black's king",
+            explanation: "f7 is the weakest point in Black's camp. The Italian's whole identity flows from that pressure.",
+          },
+          {
+            id: "italian-u1-q2",
+            title: "Quiz: Purpose of c3",
+            focus: "Core setup",
+            prompt: "Why does White play c3 in the Giuoco Piano?",
+            choices: [
+              "To prepare a safe d4 central expansion",
+              "To stop Black's Bc5 from staying on the diagonal",
+              "To prepare b4, attacking the bishop directly",
+            ],
+            answer: "To prepare a safe d4 central expansion",
+            explanation:
+              "c3 shores up the d4 square so White can push d4 without losing a pawn. It's preparation, not immediate action.",
+          },
+          {
+            id: "italian-u1-q3",
+            title: "Quiz: d3 vs d4",
+            focus: "Core setup",
+            prompt: "Playing 5.d3 instead of 5.d4 means White is choosing…",
+            choices: [
+              "A slow, piece-based buildup over an immediate central fight",
+              "A direct pawn sacrifice for rapid development",
+              "A defensive stance with no attacking ideas",
+            ],
+            answer: "A slow, piece-based buildup over an immediate central fight",
+            explanation:
+              "The Pianissimo is not passive — it leads to rich attacks via the Nf1–g3 maneuver. It just avoids the sharp d4 lines where Black gets immediate counterplay.",
+          },
+        ],
+      },
+      {
+        id: "italian-u2",
+        title: "The Kingside Attack",
+        description: "Master the signature Nf1–g3 maneuver and when to strike.",
+        lessons: [
+          {
+            id: "italian-u2-l1",
+            title: "The knight's long journey",
+            focus: "Kingside pressure",
+            prompt: "After Nbd2, White's f3 knight follows which route to reach the kingside?",
+            choices: [
+              "Nf3–f1–g3, arriving on g3 where it eyes h5 and supports f5",
+              "Nf3–e5 immediately, occupying the central outpost",
+              "Nf3–h4, threatening Nf5 right away",
+            ],
+            answer: "Nf3–f1–g3, arriving on g3 where it eyes h5 and supports f5",
+            explanation:
+              "The Nf1–g3 maneuver is the heart of the Italian slow attack. From g3, the knight pressures h5 and can support a future g4–g5 or f5 break. It takes patience, but the structure is very hard to crack.",
+          },
+          {
+            id: "italian-u2-l2",
+            title: "Knight reaches g3",
+            focus: "Kingside pressure",
+            prompt: "White has castled and played Nbd2. The f1 knight now completes the maneuver — where does it go?",
+            choices: [],
+            answer: "g3",
+            explanation:
+              "Ng3 is the destination. The knight now controls h5, supports f5, and keeps Black's pieces off the kingside. White will follow with Re1, Bb3, and a well-timed h4.",
+            board: {
+              instruction: "Tap the destination square for the knight on f1.",
+              sourceSquare: "f1",
+              targetSquare: "g3",
+              pieces: [
+                { square: "g1", piece: "K" }, { square: "d1", piece: "Q" },
+                { square: "a1", piece: "R" }, { square: "e1", piece: "R" },
+                { square: "c1", piece: "B" }, { square: "c4", piece: "B" },
+                { square: "d2", piece: "N" }, { square: "f1", piece: "N" },
+                { square: "a2", piece: "P" }, { square: "b2", piece: "P" },
+                { square: "c3", piece: "P" }, { square: "d3", piece: "P" },
+                { square: "e4", piece: "P" }, { square: "f2", piece: "P" },
+                { square: "g2", piece: "P" }, { square: "h2", piece: "P" },
+                { square: "g8", piece: "k" }, { square: "d8", piece: "q" },
+                { square: "a8", piece: "r" }, { square: "f8", piece: "r" },
+                { square: "c8", piece: "b" }, { square: "c5", piece: "b" },
+                { square: "c6", piece: "n" }, { square: "f6", piece: "n" },
+                { square: "a7", piece: "p" }, { square: "b7", piece: "p" },
+                { square: "c7", piece: "p" }, { square: "d6", piece: "p" },
+                { square: "e5", piece: "p" }, { square: "f7", piece: "p" },
+                { square: "g7", piece: "p" }, { square: "h7", piece: "p" },
+              ],
+            },
+          },
+          {
+            id: "italian-u2-l3",
+            title: "When to push h4",
+            focus: "Kingside pressure",
+            prompt: "After Ng3, White's h4 push is most effective when…",
+            choices: [
+              "Black has played …h6 or …g6, giving h5 immediate value",
+              "Immediately after castling, regardless of Black's setup",
+              "Only after trading all minor pieces first",
+            ],
+            answer: "Black has played …h6 or …g6, giving h5 immediate value",
+            explanation:
+              "h4 is a lever, not a blunder. When Black has weakened the kingside with …h6 or …g6, h4–h5 becomes a real pawn storm threat. Rushing it before the position is ready just gives Black a target.",
+          },
+        ],
+        checkpointQuiz: [
+          {
+            id: "italian-u2-q1",
+            title: "Quiz: Ng3 purpose",
+            focus: "Kingside pressure",
+            prompt: "What makes Ng3 better than Ne5 in the Italian slow system?",
+            choices: [
+              "Ng3 is permanent and supports the whole kingside pawn storm",
+              "Ne5 hangs a pawn immediately",
+              "Ng3 attacks the queen",
+            ],
+            answer: "Ng3 is permanent and supports the whole kingside pawn storm",
+            explanation:
+              "Ne5 can be challenged with …Nxe5 or …d6. Ng3 can't easily be kicked — it quietly watches h5 and f5 while White finishes preparation.",
+          },
+          {
+            id: "italian-u2-q2",
+            title: "Quiz: Best bishop square",
+            focus: "Kingside pressure",
+            prompt: "After Black plays …d6, White usually moves the Italian bishop to…",
+            choices: [
+              "b3 — safe and still eyeing the a2–g8 diagonal",
+              "d5 — trading it off immediately",
+              "e2 — tucking it away defensively",
+            ],
+            answer: "b3 — safe and still eyeing the a2–g8 diagonal",
+            explanation:
+              "Bb3 keeps the bishop out of trouble and maintains long diagonal pressure. Trading it away voluntarily hands Black the bishop pair for free.",
+          },
+          {
+            id: "italian-u2-q3",
+            title: "Quiz: Role of Re1",
+            focus: "Kingside pressure",
+            prompt: "Why does White play Re1 before launching the kingside attack?",
+            choices: [
+              "It protects the e4 pawn and clears f1 for the knight maneuver",
+              "It threatens to double rooks immediately",
+              "It is a waiting move with no specific purpose",
+            ],
+            answer: "It protects the e4 pawn and clears f1 for the knight maneuver",
+            explanation:
+              "Re1 is multi-purpose: it shores up e4 so White doesn't have to worry about …Nxe4, and it frees the f1 square for the Nf1 relay toward g3.",
+          },
+        ],
+      },
+      {
+        id: "italian-u3",
+        title: "Meeting Black's Counters",
+        description: "Know what Black is threatening and how to stay in control.",
+        lessons: [
+          {
+            id: "italian-u3-l1",
+            title: "Black's main counter: …d5",
+            focus: "Center tension",
+            prompt: "In the Giuoco Piano, Black's most direct counterplay comes from…",
+            choices: [
+              "…d5, striking at the e4 pawn and opening the center",
+              "…a5, attacking the c4 bishop directly",
+              "…Ng4, trying to win the e3 or f2 pawn",
+            ],
+            answer: "…d5, striking at the e4 pawn and opening the center",
+            explanation:
+              "…d5 is Black's best equalizing try. After exd5 Nxd5, Black has active pieces. White should continue developing calmly — the extra center space and bishop pair give enough compensation.",
+          },
+          {
+            id: "italian-u3-l2",
+            title: "Recapture after …d5 exd5",
+            focus: "Center tension",
+            prompt: "After 5.d3 d5 6.exd5, Black recaptures most actively with…",
+            choices: [],
+            answer: "d5",
+            explanation:
+              "After exd5, Black plays …Nxd5 (not …exd5 which just hands White a strong d4 square). The knight on d5 is well-placed but White keeps pressure with Nbd2 and Bb3. Recapturing here with the e-pawn simply opens lines in White's favour.",
+            board: {
+              instruction: "White captures on d5. Tap the destination square.",
+              sourceSquare: "e4",
+              targetSquare: "d5",
+              pieces: [
+                { square: "e1", piece: "K" }, { square: "d1", piece: "Q" },
+                { square: "a1", piece: "R" }, { square: "h1", piece: "R" },
+                { square: "c1", piece: "B" }, { square: "c4", piece: "B" },
+                { square: "b1", piece: "N" }, { square: "f3", piece: "N" },
+                { square: "a2", piece: "P" }, { square: "b2", piece: "P" },
+                { square: "c3", piece: "P" }, { square: "d3", piece: "P" },
+                { square: "e4", piece: "P" }, { square: "f2", piece: "P" },
+                { square: "g2", piece: "P" }, { square: "h2", piece: "P" },
+                { square: "e8", piece: "k" }, { square: "d8", piece: "q" },
+                { square: "a8", piece: "r" }, { square: "h8", piece: "r" },
+                { square: "c5", piece: "b" }, { square: "c8", piece: "b" },
+                { square: "c6", piece: "n" }, { square: "f6", piece: "n" },
+                { square: "a7", piece: "p" }, { square: "b7", piece: "p" },
+                { square: "c7", piece: "p" }, { square: "d5", piece: "p" },
+                { square: "e5", piece: "p" }, { square: "f7", piece: "p" },
+                { square: "g7", piece: "p" }, { square: "h7", piece: "p" },
+              ],
+            },
+          },
+          {
+            id: "italian-u3-l3",
+            title: "Holding the initiative",
+            focus: "Center tension",
+            prompt: "After Black equalises in the center, Italian players stay ahead by…",
+            choices: [
+              "Keeping the bishop pair active and maintaining long-term piece pressure",
+              "Trading everything off to a level endgame immediately",
+              "Pushing the a and b pawns to create queenside threats",
+            ],
+            answer: "Keeping the bishop pair active and maintaining long-term piece pressure",
+            explanation:
+              "The Italian is a strategic opening. Even in equal-looking positions, the bishop pair and superior piece coordination compound over time. Forcing trades prematurely throws away your long-term edge.",
+          },
+        ],
+        checkpointQuiz: [
+          {
+            id: "italian-u3-q1",
+            title: "Quiz: Responding to …d5",
+            focus: "Center tension",
+            prompt: "After Black plays …d5 in the Giuoco Piano, White's best response is…",
+            choices: [
+              "exd5 — open the position and play actively",
+              "e5 — kick the f6 knight and close the center",
+              "d4 — try to hold the center with both pawns",
+            ],
+            answer: "exd5 — open the position and play actively",
+            explanation:
+              "exd5 keeps White's pieces active. e5 and d4 both overextend and give Black the …c5 or …f6 break later.",
+          },
+          {
+            id: "italian-u3-q2",
+            title: "Quiz: The Marshall-style sacrifice",
+            focus: "Center tension",
+            prompt: "Black's most aggressive counter in the Italian is sometimes called the Italian Marshall. What does it involve?",
+            choices: [
+              "Sacrificing the d5 pawn after …Nxd5 Nxd5 exd5 to get active piece play",
+              "An immediate queen sortie to h4 to threaten checkmate",
+              "A queenside castle followed by a pawn storm",
+            ],
+            answer: "Sacrificing the d5 pawn after …Nxd5 Nxd5 exd5 to get active piece play",
+            explanation:
+              "The Italian Marshall gives Black rapid development and attacking chances in exchange for a pawn. Italian players must know the key defensive moves to avoid getting swept off the board.",
+          },
+          {
+            id: "italian-u3-q3",
+            title: "Quiz: Long-term Italian edge",
+            focus: "Center tension",
+            prompt: "What is the Italian player's most reliable long-term asset when Black equalises the pawn structure?",
+            choices: [
+              "The bishop pair — more powerful as pieces come off and the board opens",
+              "A passed d-pawn that wins the endgame automatically",
+              "The open h-file after the kingside attack",
+            ],
+            answer: "The bishop pair — more powerful as pieces come off and the board opens",
+            explanation:
+              "Two bishops in an open or semi-open position are a concrete advantage. Trade pieces, not bishops, and the endgame will favour you.",
+          },
+        ],
+      },
+    ],
+  },
+  london: {
+    headline: "Create a repeatable, low-maintenance White system.",
+    units: [
+      {
+        id: "london-u1",
+        title: "The London Shell",
+        description: "Build the reliable d4–Bf4–e3–Nf3 setup that works against almost anything.",
+        lessons: [
+          {
+            id: "london-u1-l1",
+            title: "Get the bishop out early",
+            focus: "Default setup",
+            prompt: "After 1.d4 d5 2.Nf3 Nf6, White's most important early move is…",
+            choices: [],
+            answer: "f4",
+            explanation:
+              "Bf4 is the London's defining move. The bishop must come out before e3 locks it in permanently. This is the one move order rule London players must know cold.",
+            board: {
+              instruction: "Tap the destination square for the bishop on c1.",
+              sourceSquare: "c1",
+              targetSquare: "f4",
+              pieces: [
+                { square: "e1", piece: "K" }, { square: "d1", piece: "Q" },
+                { square: "a1", piece: "R" }, { square: "h1", piece: "R" },
+                { square: "c1", piece: "B" }, { square: "f1", piece: "B" },
+                { square: "b1", piece: "N" }, { square: "f3", piece: "N" },
+                { square: "a2", piece: "P" }, { square: "b2", piece: "P" },
+                { square: "c2", piece: "P" }, { square: "d4", piece: "P" },
+                { square: "e2", piece: "P" }, { square: "f2", piece: "P" },
+                { square: "g2", piece: "P" }, { square: "h2", piece: "P" },
+                { square: "e8", piece: "k" }, { square: "d8", piece: "q" },
+                { square: "a8", piece: "r" }, { square: "h8", piece: "r" },
+                { square: "c8", piece: "b" }, { square: "f8", piece: "b" },
+                { square: "b8", piece: "n" }, { square: "f6", piece: "n" },
+                { square: "a7", piece: "p" }, { square: "b7", piece: "p" },
+                { square: "c7", piece: "p" }, { square: "d5", piece: "p" },
+                { square: "e7", piece: "p" }, { square: "f7", piece: "p" },
+                { square: "g7", piece: "p" }, { square: "h7", piece: "p" },
+              ],
+            },
+          },
+          {
+            id: "london-u1-l2",
+            title: "Why Bf4 before e3?",
+            focus: "Default setup",
+            prompt: "London players must play Bf4 before e3 because…",
+            choices: [
+              "e3 permanently blocks the c1 bishop — it can never reach f4 after that",
+              "Bf4 attacks the d6 pawn immediately",
+              "e3 is a mistake and should not be played in the London",
+            ],
+            answer: "e3 permanently blocks the c1 bishop — it can never reach f4 after that",
+            explanation:
+              "This is the London's most important move-order lesson. Once you play e3, the c1 bishop is locked behind your own pawn. Bf4 first, then e3 — every time.",
+          },
+          {
+            id: "london-u1-l3",
+            title: "Complete the shell — Nbd2",
+            focus: "Default setup",
+            prompt: "After 1.d4 d5 2.Bf4 Nf6 3.e3 e6 4.Nf3 Bd6, where does White's queen knight go?",
+            choices: [],
+            answer: "d2",
+            explanation:
+              "Nbd2 is the London's signature knight square. It keeps the c-file open for the rook, avoids blocking the Bf4, and supports a future e4 push. The full shell is d4 + Bf4 + e3 + Nf3 + Nbd2 + Bd3.",
+            board: {
+              instruction: "Tap the destination square for the knight on b1.",
+              sourceSquare: "b1",
+              targetSquare: "d2",
+              pieces: [
+                { square: "e1", piece: "K" }, { square: "d1", piece: "Q" },
+                { square: "a1", piece: "R" }, { square: "h1", piece: "R" },
+                { square: "f4", piece: "B" }, { square: "f1", piece: "B" },
+                { square: "b1", piece: "N" }, { square: "f3", piece: "N" },
+                { square: "a2", piece: "P" }, { square: "b2", piece: "P" },
+                { square: "c2", piece: "P" }, { square: "d4", piece: "P" },
+                { square: "e3", piece: "P" }, { square: "f2", piece: "P" },
+                { square: "g2", piece: "P" }, { square: "h2", piece: "P" },
+                { square: "e8", piece: "k" }, { square: "d8", piece: "q" },
+                { square: "a8", piece: "r" }, { square: "h8", piece: "r" },
+                { square: "c8", piece: "b" }, { square: "d6", piece: "b" },
+                { square: "b8", piece: "n" }, { square: "f6", piece: "n" },
+                { square: "a7", piece: "p" }, { square: "b7", piece: "p" },
+                { square: "c7", piece: "p" }, { square: "d5", piece: "p" },
+                { square: "e6", piece: "p" }, { square: "f7", piece: "p" },
+                { square: "g7", piece: "p" }, { square: "h7", piece: "p" },
+              ],
+            },
+          },
+        ],
+        checkpointQuiz: [
+          {
+            id: "london-u1-q1",
+            title: "Quiz: First rule",
+            focus: "Default setup",
+            prompt: "What is the single most important move-order rule in the London System?",
+            choices: [
+              "Play Bf4 before e3 — otherwise the bishop is permanently locked in",
+              "Always castle queenside for the attack",
+              "Push c4 on move two to transpose to the Queen's Gambit",
+            ],
+            answer: "Play Bf4 before e3 — otherwise the bishop is permanently locked in",
+            explanation: "Bf4 before e3 is the London's golden rule. Everything else is flexible.",
+          },
+          {
+            id: "london-u1-q2",
+            title: "Quiz: Nbd2 vs Nc3",
+            focus: "Default setup",
+            prompt: "Why does White prefer Nbd2 over Nc3 in the London?",
+            choices: [
+              "Nbd2 keeps the c-file open and avoids blocking the bishop on f4",
+              "Nc3 immediately loses a pawn to …d4",
+              "Nbd2 attacks the d5 pawn directly",
+            ],
+            answer: "Nbd2 keeps the c-file open and avoids blocking the bishop on f4",
+            explanation:
+              "Nc3 can actually work in some London lines, but Nbd2 is the classic choice — it keeps c2–c3 available and doesn't crowd the f4 bishop's diagonal.",
+          },
+          {
+            id: "london-u1-q3",
+            title: "Quiz: Completing the setup",
+            focus: "Default setup",
+            prompt: "The London's standard piece setup is d4 + Bf4 + e3 + Nf3 + Nbd2 + …",
+            choices: [
+              "Bd3 — the bishop supports the center and the eventual e4 push",
+              "Bb5 — pinning Black's knight immediately",
+              "Bg5 — putting pressure on the f6 knight",
+            ],
+            answer: "Bd3 — the bishop supports the center and the eventual e4 push",
+            explanation:
+              "Bd3 completes the London shell. The bishop eyes h7 after …Bxf4 exf4 and supports the e4 break. It's the natural resting square before castling.",
+          },
+        ],
+      },
+      {
+        id: "london-u2",
+        title: "The Attack Plan",
+        description: "Learn the Ne5 outpost and how to build kingside pressure.",
+        lessons: [
+          {
+            id: "london-u2-l1",
+            title: "The Ne5 outpost",
+            focus: "Kingside attack cues",
+            prompt: "After completing the London shell, White's most powerful piece maneuver is…",
+            choices: [
+              "Ne5 — a powerful centralized outpost that cramps Black and supports f4",
+              "Ng5 — immediately threatening f7",
+              "Nh4 — preparing a bishop trade on f5",
+            ],
+            answer: "Ne5 — a powerful centralized outpost that cramps Black and supports f4",
+            explanation:
+              "Ne5 is the London's most threatening idea. The knight on e5 is hard to kick without conceding something, it supports f4–f5 plans, and it keeps Black's pieces passive.",
+          },
+          {
+            id: "london-u2-l2",
+            title: "Reach the outpost",
+            focus: "Kingside attack cues",
+            prompt: "From the completed London setup, White advances the knight to its ideal outpost.",
+            choices: [],
+            answer: "e5",
+            explanation:
+              "Ne5 plants the knight on the best square on the board. Black cannot play …Nxe5 without giving White a strong recapture. The knight on e5 supports Qh5 threats and a future f4–f5 pawn storm.",
+            board: {
+              instruction: "Tap the destination square for the knight on f3.",
+              sourceSquare: "f3",
+              targetSquare: "e5",
+              pieces: [
+                { square: "g1", piece: "K" }, { square: "d1", piece: "Q" },
+                { square: "a1", piece: "R" }, { square: "f1", piece: "R" },
+                { square: "f4", piece: "B" }, { square: "d3", piece: "B" },
+                { square: "d2", piece: "N" }, { square: "f3", piece: "N" },
+                { square: "a2", piece: "P" }, { square: "b2", piece: "P" },
+                { square: "c2", piece: "P" }, { square: "d4", piece: "P" },
+                { square: "e3", piece: "P" }, { square: "f2", piece: "P" },
+                { square: "g2", piece: "P" }, { square: "h2", piece: "P" },
+                { square: "g8", piece: "k" }, { square: "d8", piece: "q" },
+                { square: "a8", piece: "r" }, { square: "f8", piece: "r" },
+                { square: "c8", piece: "b" }, { square: "e7", piece: "b" },
+                { square: "c6", piece: "n" }, { square: "f6", piece: "n" },
+                { square: "a7", piece: "p" }, { square: "b7", piece: "p" },
+                { square: "c7", piece: "p" }, { square: "d5", piece: "p" },
+                { square: "e6", piece: "p" }, { square: "f7", piece: "p" },
+                { square: "g7", piece: "p" }, { square: "h7", piece: "p" },
+              ],
+            },
+          },
+          {
+            id: "london-u2-l3",
+            title: "When to play f4",
+            focus: "Kingside attack cues",
+            prompt: "White plays f4 in the London when…",
+            choices: [
+              "Ne5 is already on the board, making f4–f5 a genuine pawn storm threat",
+              "Immediately on move three, before developing pieces",
+              "Only after Black has castled queenside",
+            ],
+            answer: "Ne5 is already on the board, making f4–f5 a genuine pawn storm threat",
+            explanation:
+              "f4 alone is just a pawn move. f4 with Ne5 already in place threatens f5, opening lines against the king. Always set up the knight first.",
+          },
+        ],
+        checkpointQuiz: [
+          {
+            id: "london-u2-q1",
+            title: "Quiz: Ne5 value",
+            focus: "Kingside attack cues",
+            prompt: "Why is Ne5 hard for Black to challenge in the London?",
+            choices: [
+              "…Nxe5 gives White dxe5, gaining space and locking Black's pieces in",
+              "The knight on e5 is protected by three pieces simultaneously",
+              "Black cannot play …f6 at all in this structure",
+            ],
+            answer: "…Nxe5 gives White dxe5, gaining space and locking Black's pieces in",
+            explanation:
+              "After dxe5, the e5 pawn cramps Black severely. The c6 and f6 knights lose their best squares. White has gained something real without even attacking yet.",
+          },
+          {
+            id: "london-u2-q2",
+            title: "Quiz: Attacking with the queen",
+            focus: "Kingside attack cues",
+            prompt: "With Ne5 in place, White's queen often jumps to…",
+            choices: [
+              "h5, threatening Qxh7 and combining with the f4–f5 pawn storm",
+              "d3, doubling with the bishop",
+              "b3, pressuring the queenside",
+            ],
+            answer: "h5, threatening Qxh7 and combining with the f4–f5 pawn storm",
+            explanation:
+              "Qh5 with Ne5 already on the board creates immediate mating threats. Black must respond carefully, often spending tempo on …g6, which weakens the kingside further.",
+          },
+          {
+            id: "london-u2-q3",
+            title: "Quiz: Bxd6 decision",
+            focus: "Kingside attack cues",
+            prompt: "When Black plays …Bd6 in the London, White should think about…",
+            choices: [
+              "Bxd6 — recapturing with the c-pawn gives Black a doubled pawn and opens the c-file for White",
+              "Always retreating the bishop to g3 to keep it",
+              "Immediately pushing h4 to attack",
+            ],
+            answer: "Bxd6 — recapturing with the c-pawn gives Black a doubled pawn and opens the c-file for White",
+            explanation:
+              "Trading on d6 and provoking …cxd6 gives Black a structural weakness on the c-file and a weak d6 pawn. It's often the right choice when the position calls for a structural advantage.",
+          },
+        ],
+      },
+      {
+        id: "london-u3",
+        title: "Handling Black's Counters",
+        description: "Know what to do when Black fights back with …c5 or …Qb6.",
+        lessons: [
+          {
+            id: "london-u3-l1",
+            title: "Black's main plan: …c5",
+            focus: "Common Black counters",
+            prompt: "Black's most principled counter to the London is …c5. White should respond with…",
+            choices: [
+              "c3 — holding the d4 pawn and keeping the structure solid",
+              "dxc5 — immediately giving up the center",
+              "d5 — pushing forward and closing the position",
+            ],
+            answer: "c3 — holding the d4 pawn and keeping the structure solid",
+            explanation:
+              "c3 defends d4 and keeps the London's pawn chain intact. White doesn't need to fight for the center dynamically — the solid structure is the point of the opening.",
+          },
+          {
+            id: "london-u3-l2",
+            title: "Dealing with …Qb6",
+            focus: "Common Black counters",
+            prompt: "After …c5 …Qb6, Black attacks b2 and d4 at the same time. White's best response is…",
+            choices: [
+              "Qc1 or Qb3 — defending b2 while preparing to trade queens if Black wants",
+              "b3 — blocking the queen's attack but weakening the c3 square",
+              "Nd2–b3 — immediately counterattacking the queen",
+            ],
+            answer: "Qc1 or Qb3 — defending b2 while preparing to trade queens if Black wants",
+            explanation:
+              "Qb3 offers a queen trade that actually favours White — the resulting endgame is easier for White to play. Qc1 is the more circumspect option, keeping the queen in play.",
+          },
+          {
+            id: "london-u3-l3",
+            title: "When Black trades the bishop",
+            focus: "Common Black counters",
+            prompt: "If Black plays …Bxf4 to remove the London bishop, White recaptures with…",
+            choices: [
+              "exf4 — the f-pawn supports future f5 ideas and the e3–f4 chain",
+              "gxf4 — opening the g-file for an attack",
+              "Nxf4 — keeping a piece on f4",
+            ],
+            answer: "exf4 — the f-pawn supports future f5 ideas and the e3–f4 chain",
+            explanation:
+              "exf4 is correct. The f4 pawn fits naturally into the f4–f5 attack and keeps the pawn chain healthy. gxf4 weakens the kingside and is not the London's style.",
+          },
+        ],
+        checkpointQuiz: [
+          {
+            id: "london-u3-q1",
+            title: "Quiz: Answering …c5",
+            focus: "Common Black counters",
+            prompt: "Against …c5 in the London, White's most reliable response is…",
+            choices: [
+              "c3, keeping d4 stable without conceding the center",
+              "dxc5, winning a pawn temporarily",
+              "e4, turning it into a King's Indian Attack",
+            ],
+            answer: "c3, keeping d4 stable without conceding the center",
+            explanation: "c3 is the London's backbone answer to …c5. Solid, reliable, and keeps all of White's pieces well placed.",
+          },
+          {
+            id: "london-u3-q2",
+            title: "Quiz: The …Qb6 weapon",
+            focus: "Common Black counters",
+            prompt: "Black plays …Qb6 to pressure b2 and d4. This is called…",
+            choices: [
+              "The London's most common practical problem — but easily handled with Qc1 or Qb3",
+              "A decisive refutation of the London System",
+              "An unusual sideline rarely seen in practice",
+            ],
+            answer: "The London's most common practical problem — but easily handled with Qc1 or Qb3",
+            explanation:
+              "…Qb6 looks scary but has a simple antidote. Knowing the queen moves here is what separates London players who prepared from those who panicked.",
+          },
+          {
+            id: "london-u3-q3",
+            title: "Quiz: London strength",
+            focus: "Common Black counters",
+            prompt: "What makes the London System genuinely strong at the club level and above?",
+            choices: [
+              "It's the same setup every game — you study plans, not positions, and outplay opponents in the middlegame",
+              "It traps Black's queen in the first ten moves",
+              "It leads to forced draws, making it safe for tournaments",
+            ],
+            answer: "It's the same setup every game — you study plans, not positions, and outplay opponents in the middlegame",
+            explanation:
+              "The London's real strength is efficiency. You spend your study time learning middlegame plans once, then deploy them game after game regardless of what Black does.",
+          },
+        ],
+      },
+    ],
+  },
+};
+
+export function getLearningPath(openingKey: string): LearningPath | null {
+  return learningPaths[openingKey] ?? null;
+}
+
+// ─── Legacy track system (preserved for backward compatibility) ───────────────
+
 export function getTrainingTrack(openingKey: string): TrainingTrack {
   const baseTrack =
     trainingCatalog[openingKey] ?? {
