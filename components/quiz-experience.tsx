@@ -3,8 +3,11 @@
 import { UserButton, useAuth, useClerk } from "@clerk/nextjs";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import { getTrainingTrack, type TrainingLesson } from "@/data/training";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { filterLessonsForPlan, getTrainingTrack, type TrainingLesson } from "@/data/training";
+import { buildFenFromKnightoraPlacements, inferSideToMoveFromSource } from "@/lib/board-fen";
+import { getLegalDestinationsForSource, isLegalDestinationForSource } from "@/lib/move-legality";
+import { analyzeFenWithStockfish, type StockfishEval } from "@/lib/stockfish-client";
 import type { ChessProfileResponse } from "@/lib/chesscom";
 import {
   describeGoal,
@@ -62,6 +65,8 @@ type TrainingSessionState = {
   lessonIndex: number;
   selectedChoice: string | null;
   revealed: boolean;
+  /** Current step index inside multi-move `line` lessons */
+  lineStepIndex: number;
 };
 
 const STORAGE_KEY = "knightora-dashboard-v2";
@@ -102,22 +107,37 @@ const plans: Array<{
     id: "starter",
     name: "Starter Supporter",
     price: "$8/mo",
-    description: "Support the project and get account-backed cloud saves.",
-    features: ["Everything in Free", "Cloud-synced dashboard saves", "Priority feature feedback"],
+    description: "Cloud saves + deeper line drills (more move orders).",
+    features: [
+      "Everything in Free",
+      "Account-backed cloud dashboard saves (use across devices)",
+      "Extra branch line drills per opening (more move orders)",
+      "Early access to new training packs as they ship",
+    ],
   },
   {
     id: "club",
     name: "Club Supporter",
     price: "$16/mo",
-    description: "Support faster content expansion and roadmap priorities.",
-    features: ["Everything in Starter Supporter", "Early access to new study packs", "Roadmap vote weight"],
+    description: "Best tier: Stockfish analysis + maximum training depth.",
+    features: [
+      "Everything in Starter Supporter",
+      "Stockfish analysis on lesson positions (eval + best line)",
+      "Heavier continuation drills (longer lines)",
+      "Priority roadmap voting + faster content expansion",
+    ],
   },
   {
     id: "pro",
     name: "Pro Supporter",
     price: "$29/mo",
-    description: "Highest support tier funding advanced training features.",
-    features: ["Everything in Club Supporter", "Beta access to advanced tools", "Direct founder feedback channel"],
+    description: "Everything unlocked, fastest roadmap access, and highest training depth.",
+    features: [
+      "Everything in Club Supporter",
+      "Deepest line library and premium study packs",
+      "Early access to major training UX features",
+      "Highest-priority support and roadmap influence",
+    ],
   },
   {
     id: "admin",
@@ -133,8 +153,6 @@ export function QuizExperience() {
   const { signOut } = useClerk();
 
   const [profile, setProfile] = useState<QuizProfile>(initialProfile);
-  const [hasSubmitted, setHasSubmitted] = useState(false);
-  const [serverResult, setServerResult] = useState<ChessProfileResponse | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
 
@@ -144,6 +162,10 @@ export function QuizExperience() {
   const [guestSubscriptionPlan, setGuestSubscriptionPlan] = useState<SubscriptionPlan>("free");
   const [adminCodeInput, setAdminCodeInput] = useState("");
   const [adminCodeMessage, setAdminCodeMessage] = useState<string | null>(null);
+  const [engineEval, setEngineEval] = useState<StockfishEval | null>(null);
+  const [engineStatus, setEngineStatus] = useState<string | null>(null);
+  const analysisAbortRef = useRef<AbortController | null>(null);
+  const lineAdvanceTimeoutRef = useRef<number | null>(null);
 
   const [hydrated, setHydrated] = useState(false);
   const [trainingSession, setTrainingSession] = useState<TrainingSessionState>({
@@ -151,16 +173,28 @@ export function QuizExperience() {
     lessonIndex: 0,
     selectedChoice: null,
     revealed: false,
+    lineStepIndex: 0,
   });
 
   const fallbackRepertoire = getRepertoire(profile);
   const activeDashboard = savedDashboard;
-  const trainingTracks = activeDashboard ? buildTrainingTracks(activeDashboard.repertoire, activeDashboard.trainingProgress) : [];
+  const selectedPlan = accountUser?.subscriptionPlan ?? guestSubscriptionPlan;
+  const trainingTracks = activeDashboard
+    ? buildTrainingTracks(activeDashboard.repertoire, selectedPlan)
+    : [];
   const activeTrack = trainingTracks.find((track) => track.id === trainingSession.trackId) ?? trainingTracks[0] ?? null;
   const activeLesson = activeTrack?.lessons[trainingSession.lessonIndex] ?? null;
   const progress = activeDashboard?.trainingProgress ?? initialTrainingProgress;
-  const selectedPlan = accountUser?.subscriptionPlan ?? guestSubscriptionPlan;
   const latestDashboardRef = useRef<SavedDashboard | null>(null);
+  const canUsePremiumReview = selectedPlan === "starter" || selectedPlan === "club" || selectedPlan === "admin";
+  const canUsePremiumStudies = selectedPlan === "club" || selectedPlan === "admin";
+
+  function clearLineAdvanceTimer() {
+    if (lineAdvanceTimeoutRef.current != null) {
+      window.clearTimeout(lineAdvanceTimeoutRef.current);
+      lineAdvanceTimeoutRef.current = null;
+    }
+  }
 
   useEffect(() => {
     setHydrated(true);
@@ -171,7 +205,6 @@ export function QuizExperience() {
         const parsed = JSON.parse(saved) as SavedDashboard;
         setSavedDashboard(parsed);
         setProfile(parsed.profile);
-        setHasSubmitted(true);
       }
     } catch {
       window.localStorage.removeItem(STORAGE_KEY);
@@ -203,18 +236,54 @@ export function QuizExperience() {
   useEffect(() => {
     if (!activeTrack) return;
     setTrainingSession((current) => {
-      if (current.trackId === activeTrack.id && current.lessonIndex < activeTrack.lessons.length) {
+      const maxIdx = Math.max(0, activeTrack.lessons.length - 1);
+      const safeIndex = Math.min(current.lessonIndex, maxIdx);
+      if (current.trackId === activeTrack.id && current.lessonIndex === safeIndex && current.lessonIndex < activeTrack.lessons.length) {
         return current;
       }
 
       return {
         trackId: activeTrack.id,
-        lessonIndex: 0,
+        lessonIndex: safeIndex,
         selectedChoice: null,
         revealed: false,
+        lineStepIndex: 0,
       };
     });
   }, [activeTrack]);
+
+  useEffect(() => {
+    setTrainingSession((current) => ({ ...current, lineStepIndex: 0 }));
+  }, [activeLesson?.id]);
+
+  useEffect(() => {
+    return () => {
+      clearLineAdvanceTimer();
+    };
+  }, []);
+
+  // For full-line lessons: auto-advance through the opponent's moves so the user only plays their own side.
+  useEffect(() => {
+    if (!activeLesson?.line?.steps?.length || !activeTrack) return;
+    const desiredSide = activeTrack.id === "white" ? "w" : "b";
+
+    const step = activeLesson.line.steps[trainingSession.lineStepIndex];
+    const side = sideToMoveFromFen(step?.fen);
+    if (!side) return;
+    if (side === desiredSide) return;
+
+    // Skip opponent ply (or multiple if needed) without requiring clicks.
+    setTrainingSession((current) => {
+      let idx = current.lineStepIndex;
+      while (idx < activeLesson.line!.steps.length) {
+        const s = sideToMoveFromFen(activeLesson.line!.steps[idx]?.fen);
+        if (!s || s === desiredSide) break;
+        idx += 1;
+      }
+      if (idx === current.lineStepIndex) return current;
+      return { ...current, lineStepIndex: idx, selectedChoice: null, revealed: false };
+    });
+  }, [activeLesson?.id, activeLesson?.line, activeTrack, trainingSession.lineStepIndex]);
 
   async function loadAccount() {
     const response = await fetch("/api/account/me");
@@ -228,7 +297,6 @@ export function QuizExperience() {
     if (payload.dashboard) {
       setSavedDashboard(payload.dashboard);
       setProfile(payload.dashboard.profile);
-      setHasSubmitted(true);
     }
   }
 
@@ -236,11 +304,9 @@ export function QuizExperience() {
     setProfile((current) => ({ ...current, [key]: value }));
   }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setHasSubmitted(true);
     setAnalysisError(null);
-    setServerResult(null);
 
     if (!profile.username?.trim()) {
       const dashboard = buildDashboard(profile, fallbackRepertoire, null, progress);
@@ -269,7 +335,6 @@ export function QuizExperience() {
       }
 
       const resolved = payload as ChessProfileResponse;
-      setServerResult(resolved);
       setSavedDashboard(buildDashboard(profile, resolved.repertoire, resolved.insights, progress));
     } catch (error) {
       const message =
@@ -349,6 +414,43 @@ export function QuizExperience() {
     window.location.href = payload.url;
   }
 
+  function canUseStockfish(plan: SubscriptionPlan) {
+    return plan === "club" || plan === "admin";
+  }
+
+  async function runStockfishAnalysis(fen: string) {
+    if (!canUseStockfish(selectedPlan)) {
+      setEngineStatus("Upgrade to Club Supporter to use Stockfish analysis.");
+      return;
+    }
+
+    analysisAbortRef.current?.abort();
+    const controller = new AbortController();
+    analysisAbortRef.current = controller;
+
+    setEngineEval(null);
+    setEngineStatus("Analyzing with Stockfish…");
+
+    try {
+      const best = await analyzeFenWithStockfish({
+        fen,
+        depth: 16,
+        multiPv: 1,
+        onInfo: (info) => {
+          if (info.depth >= 10) setEngineEval(info);
+        },
+        signal: controller.signal,
+      });
+
+      if (controller.signal.aborted) return;
+      setEngineEval(best);
+      setEngineStatus(best ? "Stockfish analysis ready." : "No analysis produced.");
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Stockfish failed to analyze.";
+      setEngineStatus(msg);
+    }
+  }
+
   async function applyAdminCode() {
     if (!accountUser) {
       setAdminCodeMessage("Sign in first to apply an admin code.");
@@ -370,17 +472,77 @@ export function QuizExperience() {
   }
 
   function beginTrack(trackId: string) {
+    clearLineAdvanceTimer();
     setTrainingSession({
       trackId,
       lessonIndex: 0,
       selectedChoice: null,
       revealed: false,
+      lineStepIndex: 0,
     });
   }
 
   function chooseAnswer(answer: string) {
     if (!activeDashboard || !activeLesson) {
       setTrainingSession((current) => ({ ...current, selectedChoice: answer, revealed: true }));
+      return;
+    }
+
+    const line = activeLesson.line;
+    if (line?.steps?.length) {
+      const step = line.steps[trainingSession.lineStepIndex];
+      if (!step) return;
+      const expected = step.targetSquare;
+      const isCorrect = answer === expected;
+
+      if (isCorrect && trainingSession.lineStepIndex < line.steps.length - 1) {
+        setTrainingSession((current) => ({
+          ...current,
+          selectedChoice: answer,
+          revealed: false,
+        }));
+        clearLineAdvanceTimer();
+        lineAdvanceTimeoutRef.current = window.setTimeout(() => {
+          setTrainingSession((current) => ({
+            ...current,
+            // Advance to next ply; an effect auto-skips opponent ply.
+            lineStepIndex: current.lineStepIndex + 1,
+            selectedChoice: null,
+            revealed: false,
+          }));
+        }, 280);
+        return;
+      }
+
+      const nextProgress = applyLessonAttempt(activeDashboard.trainingProgress, activeLesson.id, isCorrect);
+      const nextDashboard = {
+        ...activeDashboard,
+        trainingProgress: nextProgress,
+        savedAt: new Date().toISOString(),
+      };
+      setSavedDashboard(nextDashboard);
+      setTrainingSession((current) => ({
+        ...current,
+        selectedChoice: answer,
+        revealed: true,
+      }));
+      return;
+    }
+
+    if (activeLesson.board) {
+      const isCorrect = answer === activeLesson.board.targetSquare;
+      const nextProgress = applyLessonAttempt(activeDashboard.trainingProgress, activeLesson.id, isCorrect);
+      const nextDashboard = {
+        ...activeDashboard,
+        trainingProgress: nextProgress,
+        savedAt: new Date().toISOString(),
+      };
+      setSavedDashboard(nextDashboard);
+      setTrainingSession((current) => ({
+        ...current,
+        selectedChoice: answer,
+        revealed: true,
+      }));
       return;
     }
 
@@ -401,6 +563,7 @@ export function QuizExperience() {
   }
 
   function resetCurrentLesson() {
+    clearLineAdvanceTimer();
     setTrainingSession((current) => ({
       ...current,
       selectedChoice: null,
@@ -410,12 +573,66 @@ export function QuizExperience() {
 
   function advanceLesson() {
     if (!activeTrack) return;
+    clearLineAdvanceTimer();
     setTrainingSession((current) => ({
       trackId: current.trackId,
       lessonIndex: Math.min(current.lessonIndex + 1, activeTrack.lessons.length - 1),
       selectedChoice: null,
       revealed: false,
+      lineStepIndex: 0,
     }));
+  }
+
+  function restartCurrentLineDrill() {
+    clearLineAdvanceTimer();
+    setTrainingSession((current) => ({
+      ...current,
+      lineStepIndex: 0,
+      selectedChoice: null,
+      revealed: false,
+    }));
+  }
+
+  function jumpToLessonById(lessonId: string) {
+    if (!activeTrack) return;
+    const idx = activeTrack.lessons.findIndex((l) => l.id === lessonId);
+    if (idx < 0) return;
+    clearLineAdvanceTimer();
+    setTrainingSession({
+      trackId: activeTrack.id,
+      lessonIndex: idx,
+      selectedChoice: null,
+      revealed: false,
+      lineStepIndex: 0,
+    });
+  }
+
+  function jumpToLessonIndex(lessonIndex: number) {
+    if (!activeTrack) return;
+    if (lessonIndex < 0 || lessonIndex >= activeTrack.lessons.length) return;
+    clearLineAdvanceTimer();
+    setTrainingSession({
+      trackId: activeTrack.id,
+      lessonIndex,
+      selectedChoice: null,
+      revealed: false,
+      lineStepIndex: 0,
+    });
+  }
+
+  if (!hydrated) {
+    return (
+      <div className={styles.pageShell}>
+        <main>
+          <section className={styles.panel}>
+            <div className={styles.sectionHeading}>
+              <p className={styles.eyebrow}>Knightora</p>
+              <h2>Loading your training dashboard…</h2>
+            </div>
+          </section>
+        </main>
+      </div>
+    );
   }
 
   return (
@@ -492,7 +709,7 @@ export function QuizExperience() {
           <div className={styles.sectionHeading}>
             <p className={styles.eyebrow}>Plans and value</p>
             <h2>Start free, then support if you find it useful.</h2>
-            <p>Supporter tiers currently fund development. Billing is not wired yet, so this section explains value clearly.</p>
+            <p>Supporter tiers fund more lessons, deeper lines, and better training tools. Paid tiers upgrade via Stripe checkout.</p>
           </div>
           <div className={styles.pricingGrid}>
             {plans
@@ -515,10 +732,30 @@ export function QuizExperience() {
                   className={`${styles.button} ${styles.buttonSecondary}`}
                   onClick={() => void (plan.id === "starter" || plan.id === "club" || plan.id === "pro" ? startCheckout(plan.id) : choosePlan(plan.id))}
                 >
-                  {selectedPlan === plan.id ? "Selected plan" : plan.id === "starter" || plan.id === "club" || plan.id === "pro" ? "Checkout" : "Use this plan"}
+                  {selectedPlan === plan.id
+                    ? "Selected plan"
+                    : plan.id === "starter" || plan.id === "club" || plan.id === "pro"
+                      ? "Checkout"
+                      : "Use this plan"}
                 </button>
               </article>
             ))}
+          </div>
+          <div className={styles.adminUnlockPanel}>
+            <h3>Admin unlock (internal/testing)</h3>
+            <p>Paste your admin code here after signing in. This is separate from paid plans.</p>
+            <div className={styles.adminUnlockRow}>
+              <input
+                type="password"
+                value={adminCodeInput}
+                onChange={(event) => setAdminCodeInput(event.target.value)}
+                placeholder="Enter admin code"
+              />
+              <button type="button" className={`${styles.button} ${styles.buttonSecondary}`} onClick={() => void applyAdminCode()}>
+                Apply code
+              </button>
+            </div>
+            {adminCodeMessage ? <p className={styles.adminUnlockMessage}>{adminCodeMessage}</p> : null}
           </div>
         </section>
 
@@ -790,7 +1027,7 @@ export function QuizExperience() {
                   <p className={styles.eyebrow}>Guided training</p>
                   <h3>Board-based opening reps with automatic review</h3>
                   <p className={styles.trainingIntro}>
-                    Knightora now prioritizes missed lessons, queues weak material sooner, and adds guided studies so your repertoire becomes usable instead of theoretical.
+                    Knightora includes full-line drills (10–17 half-moves per line) built from real move order, plus idea questions and review cards. Free users get the main line and full library for each opening; higher tiers unlock extra branch lines and deeper theory.
                   </p>
                 </div>
                 <div className={styles.trainingStats}>
@@ -809,20 +1046,56 @@ export function QuizExperience() {
                     onClick={() => beginTrack(track.id)}
                   >
                     <span className={styles.trackBadge}>{track.label}</span>
-                    <h4>{track.opening.name}</h4>
-                    <p>{track.headline}</p>
-                    <div className={styles.progressRow}>
-                      <div className={styles.progressBar}>
+                    <span className={styles.trackCardTitle}>{track.opening.name}</span>
+                    <span className={styles.trackCardBlurb}>{track.headline}</span>
+                    <span className={styles.trackPlanHint}>
+                      {track.lessons.length} lesson{track.lessons.length !== 1 ? "s" : ""} available on your plan
+                      {"totalLessonsInLibrary" in track && track.totalLessonsInLibrary > track.lessons.length
+                        ? ` · ${track.totalLessonsInLibrary - track.lessons.length} more on higher tiers`
+                        : ""}
+                    </span>
+                    <span className={styles.progressRow}>
+                      <span className={styles.progressBar}>
                         <span style={{ width: `${getTrackCompletion(track.lessons, progress.completedLessons)}%` }} />
-                      </div>
+                      </span>
                       <strong>{getTrackCompletion(track.lessons, progress.completedLessons)}%</strong>
-                    </div>
-                    <p className={styles.trackDueText}>{getTrackDueSummary(track.lessons, progress.lessonStats)}</p>
+                    </span>
+                    <span className={styles.trackDueText}>{getTrackDueSummary(track.lessons, progress.lessonStats)}</span>
                   </button>
                 ))}
               </div>
 
-              {activeTrack ? (
+              {activeTrack && activeDashboard && canUsePremiumReview ? (
+                <div className={styles.drillReview}>
+                  <h4>Line review</h4>
+                  <p className={styles.drillReviewIntro}>
+                    Replay full multi-move lines you&apos;ve completed. Board taps only accept <strong>legal</strong> destinations for the piece that should move.
+                  </p>
+                  <ul className={styles.drillList}>
+                    {activeTrack.lessons
+                      .filter((l) => l.line?.steps?.length && progress.completedLessons.includes(l.id))
+                      .map((l) => (
+                        <li key={l.id}>
+                          <button type="button" className={styles.drillJumpButton} onClick={() => jumpToLessonById(l.id)}>
+                            {l.title}
+                          </button>
+                        </li>
+                      ))}
+                  </ul>
+                  {!activeTrack.lessons.some((l) => l.line?.steps?.length && progress.completedLessons.includes(l.id)) ? (
+                    <p className={styles.drillEmpty}>Finish a full line lesson once to unlock quick replays here.</p>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {activeTrack && activeDashboard && !canUsePremiumReview ? (
+                <div className={styles.drillReview}>
+                  <h4>Line review</h4>
+                  <p className={styles.drillReviewIntro}>Starter or higher unlocks saved replay drills and fast review jumps.</p>
+                </div>
+              ) : null}
+
+              {activeTrack && canUsePremiumStudies ? (
                 <div className={styles.studyShelf}>
                   <div className={styles.studyHeader}>
                     <h4>{activeTrack.opening.name} studies</h4>
@@ -838,8 +1111,54 @@ export function QuizExperience() {
                 </div>
               ) : null}
 
+              {activeTrack && !canUsePremiumStudies ? (
+                <div className={styles.studyShelf}>
+                  <div className={styles.studyHeader}>
+                    <h4>{activeTrack.opening.name} studies</h4>
+                    <p>Club Supporter unlocks extended study notes and model-game guidance.</p>
+                  </div>
+                </div>
+              ) : null}
+
               {activeTrack && activeLesson ? (
                 <div className={styles.lessonShell}>
+                  <div className={styles.pathSection}>
+                    <div className={styles.pathHeaderRow}>
+                      <h4>{activeTrack.opening.name} learning path</h4>
+                      <p>
+                        Follow the path: complete a lesson to unlock the next checkpoint.
+                      </p>
+                    </div>
+                    <div className={styles.pathRail}>
+                      {activeTrack.lessons.map((lesson, index) => {
+                        const isCompleted = progress.completedLessons.includes(lesson.id);
+                        const isCurrent = index === trainingSession.lessonIndex;
+                        const previousLessonId = index > 0 ? activeTrack.lessons[index - 1]?.id : null;
+                        const isUnlocked = index === 0 || isCompleted || isCurrent || (previousLessonId ? progress.completedLessons.includes(previousLessonId) : false);
+                        const isBoardLesson = Boolean(lesson.line?.steps?.length || lesson.board);
+                        return (
+                          <div key={lesson.id} className={styles.pathNodeWrap}>
+                            {index > 0 ? (
+                              <span
+                                className={`${styles.pathConnector} ${progress.completedLessons.includes(activeTrack.lessons[index - 1]?.id ?? "") ? styles.pathConnectorDone : ""}`}
+                              />
+                            ) : null}
+                            <button
+                              type="button"
+                              disabled={!isUnlocked}
+                              onClick={() => jumpToLessonIndex(index)}
+                              className={`${styles.pathNode} ${isCurrent ? styles.pathNodeCurrent : ""} ${isCompleted ? styles.pathNodeDone : ""} ${!isUnlocked ? styles.pathNodeLocked : ""}`}
+                            >
+                              <span className={styles.pathNodeOrb}>{isCompleted ? "✓" : index + 1}</span>
+                              <span className={styles.pathNodeTitle}>{lesson.title}</span>
+                              <span className={styles.pathNodeMeta}>{isBoardLesson ? "Board drill" : "Concept checkpoint"}</span>
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                   <div className={styles.lessonMeta}>
                     <span className={styles.lessonTag}>{activeTrack.label}</span>
                     <span className={styles.lessonTagMuted}>
@@ -850,8 +1169,62 @@ export function QuizExperience() {
                   <p className={styles.lessonFocus}>Focus: {activeLesson.focus}</p>
                   <p className={styles.lessonPrompt}>{activeLesson.prompt}</p>
 
-                  {activeLesson.board ? (
-                    <BoardLessonView lesson={activeLesson} selectedSquare={trainingSession.selectedChoice} revealed={trainingSession.revealed} onChooseSquare={chooseAnswer} />
+                  {activeLesson.line?.steps?.length ? (
+                    <div className={styles.lineDrillRow}>
+                      <p className={styles.lineStepBadge}>
+                        Your move {Math.floor(trainingSession.lineStepIndex / 2) + 1} of {Math.ceil(activeLesson.line.steps.length / 2)} in this line
+                      </p>
+                      <p className={styles.lineCoachHint}>You only play your side; opponent replies auto-play.</p>
+                      <button type="button" className={styles.drillRestartButton} onClick={restartCurrentLineDrill}>
+                        Restart line
+                      </button>
+                    </div>
+                  ) : null}
+
+                  {getBoardInteractionSpec(activeLesson, trainingSession.lineStepIndex) ? (
+                    <>
+                      <BoardLessonView
+                        key={`${activeLesson.id}-${trainingSession.lineStepIndex}`}
+                        boardSpec={getBoardInteractionSpec(activeLesson, trainingSession.lineStepIndex)!}
+                        selectedSquare={trainingSession.selectedChoice}
+                        revealed={trainingSession.revealed}
+                        orientation={activeTrack.id === "white" ? "white" : "black"}
+                        onChooseSquare={chooseAnswer}
+                      />
+                      {getBoardInteractionSpec(activeLesson, trainingSession.lineStepIndex)?.fen ? (
+                        <div className={styles.enginePanel}>
+                          <div className={styles.engineRow}>
+                            <button
+                              type="button"
+                              className={`${styles.button} ${styles.buttonSecondary}`}
+                              onClick={() => void runStockfishAnalysis(getBoardInteractionSpec(activeLesson, trainingSession.lineStepIndex)!.fen!)}
+                            >
+                              Analyze with Stockfish
+                            </button>
+                            <p className={styles.engineStatus}>
+                              {engineStatus ?? (canUseStockfish(selectedPlan) ? "Ready." : "Club unlocks analysis.")}
+                            </p>
+                          </div>
+                          {engineEval ? (
+                            <div className={styles.engineResult}>
+                              <p>
+                                <strong>Depth:</strong> {engineEval.depth} <strong>Eval:</strong>{" "}
+                                {engineEval.mate != null
+                                  ? `Mate ${engineEval.mate}`
+                                  : engineEval.cp != null
+                                    ? `${(engineEval.cp / 100).toFixed(2)}`
+                                    : "—"}
+                              </p>
+                              {engineEval.pv.length ? (
+                                <p className={styles.enginePv}>
+                                  <strong>Best line:</strong> {engineEval.pv.slice(0, 10).join(" ")}
+                                </p>
+                              ) : null}
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </>
                   ) : (
                     <div className={styles.choiceGrid}>
                       {activeLesson.choices.map((choice) => {
@@ -875,14 +1248,18 @@ export function QuizExperience() {
                   {trainingSession.revealed ? (
                     <div
                       className={`${styles.feedbackCard} ${
-                        trainingSession.selectedChoice === activeLesson.answer ? styles.feedbackCardCorrect : styles.feedbackCardWrong
+                        isLessonAnswerCorrect(activeLesson, trainingSession.selectedChoice, trainingSession.lineStepIndex)
+                          ? styles.feedbackCardCorrect
+                          : styles.feedbackCardWrong
                       }`}
                     >
                       <p className={styles.statusTitle}>
-                        {trainingSession.selectedChoice === activeLesson.answer ? "Correct" : "Needs review"}
+                        {isLessonAnswerCorrect(activeLesson, trainingSession.selectedChoice, trainingSession.lineStepIndex)
+                          ? "Correct"
+                          : "Needs review"}
                       </p>
                       <p>{activeLesson.explanation}</p>
-                      {trainingSession.selectedChoice === activeLesson.answer ? (
+                      {isLessonAnswerCorrect(activeLesson, trainingSession.selectedChoice, trainingSession.lineStepIndex) ? (
                         <button type="button" className={`${styles.button} ${styles.buttonPrimary}`} onClick={advanceLesson}>
                           {trainingSession.lessonIndex === activeTrack.lessons.length - 1 ? "Finish track" : "Next lesson"}
                         </button>
@@ -990,57 +1367,211 @@ function InsightCard({ title, lines }: { title: string; lines: string[] }) {
   );
 }
 
+type BoardInteractionSpec = {
+  instruction: string;
+  sourceSquare?: string;
+  targetSquare: string;
+  pieces: Array<{ square: string; piece: string }>;
+  /** When set, only chess-legal destinations (for the moving piece) are accepted. */
+  fen?: string;
+  /** Line lessons carry exact full-board placements at each step. */
+  isExactPosition?: boolean;
+};
+
+function getBoardInteractionSpec(lesson: TrainingLesson, lineStepIndex: number): BoardInteractionSpec | null {
+  if (lesson.line?.steps?.length) {
+    const step = lesson.line.steps[lineStepIndex];
+    if (!step) return null;
+    return {
+      instruction: step.instruction,
+      sourceSquare: step.sourceSquare,
+      targetSquare: step.targetSquare,
+      pieces: step.pieces,
+      fen: step.fen,
+      isExactPosition: true,
+    };
+  }
+  if (lesson.board) {
+    try {
+      const fen = buildFenFromKnightoraPlacements(
+        lesson.board.pieces,
+        inferSideToMoveFromSource(lesson.board.pieces, lesson.board.sourceSquare),
+      );
+      return {
+        instruction: lesson.board.instruction,
+        sourceSquare: lesson.board.sourceSquare,
+        targetSquare: lesson.board.targetSquare,
+        pieces: lesson.board.pieces,
+        fen,
+      };
+    } catch {
+      return {
+        instruction: lesson.board.instruction,
+        sourceSquare: lesson.board.sourceSquare,
+        targetSquare: lesson.board.targetSquare,
+        pieces: lesson.board.pieces,
+      };
+    }
+  }
+  return null;
+}
+
+function isLessonAnswerCorrect(lesson: TrainingLesson, selected: string | null, lineStepIndex: number) {
+  if (selected == null) return false;
+  if (lesson.line?.steps?.length) {
+    const step = lesson.line.steps[lineStepIndex];
+    return step ? selected === step.targetSquare : false;
+  }
+  if (lesson.board) return selected === lesson.board.targetSquare;
+  return selected === lesson.answer;
+}
+
+function sideToMoveFromFen(fen: string | undefined) {
+  if (!fen) return null;
+  const parts = fen.split(" ");
+  const side = parts[1];
+  return side === "w" || side === "b" ? side : null;
+}
+
 function BoardLessonView({
-  lesson,
+  boardSpec,
   selectedSquare,
   revealed,
+  orientation,
   onChooseSquare,
 }: {
-  lesson: TrainingLesson;
+  boardSpec: BoardInteractionSpec;
   selectedSquare: string | null;
   revealed: boolean;
+  orientation: "white" | "black";
   onChooseSquare: (square: string) => void;
 }) {
-  const files = ["a", "b", "c", "d", "e", "f", "g", "h"];
-  const ranks = [8, 7, 6, 5, 4, 3, 2, 1];
-  const pieceMap = applyLessonPosition(getFullBoardPieceMap(), lesson.board?.pieces ?? []);
+  const [illegalHint, setIllegalHint] = useState<string | null>(null);
+  const [selectedSource, setSelectedSource] = useState<string | null>(boardSpec.sourceSquare ?? null);
+  const [lastMovedTo, setLastMovedTo] = useState<string | null>(null);
+  const [dragSource, setDragSource] = useState<string | null>(null);
+  const hintTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (hintTimerRef.current != null) window.clearTimeout(hintTimerRef.current);
+    };
+  }, []);
+
+  const legalDests = useMemo(() => {
+    if (revealed || !boardSpec.fen || !selectedSource) return new Set<string>();
+    return getLegalDestinationsForSource(boardSpec.fen, selectedSource);
+  }, [boardSpec.fen, selectedSource, revealed]);
+
+  function setHint(message: string) {
+    setIllegalHint(message);
+    if (hintTimerRef.current != null) window.clearTimeout(hintTimerRef.current);
+    hintTimerRef.current = window.setTimeout(() => setIllegalHint(null), 1800);
+  }
+
+  function handlePickSquare(square: string, pieceOnSquare: string | undefined, sourceOverride?: string | null) {
+    if (revealed) return;
+
+    // First tap picks the moving piece, second tap picks destination.
+    if (boardSpec.fen && pieceOnSquare && !sourceOverride) {
+      if (boardSpec.sourceSquare && square !== boardSpec.sourceSquare) {
+        setHint("Select the highlighted source piece first.");
+        return;
+      }
+      setSelectedSource(square);
+      setIllegalHint(null);
+      return;
+    }
+
+    if (boardSpec.fen) {
+      const moveSource = sourceOverride ?? selectedSource ?? boardSpec.sourceSquare;
+      const legal = isLegalDestinationForSource(boardSpec.fen, moveSource, square);
+      if (!legal) {
+        setHint("Illegal square — choose a highlighted legal destination.");
+        return;
+      }
+    }
+    setIllegalHint(null);
+    setLastMovedTo(square);
+    window.setTimeout(() => setLastMovedTo(null), 220);
+    onChooseSquare(square);
+  }
+
+  function handleDragStart(square: string, pieceOnSquare: string | undefined) {
+    if (revealed || !pieceOnSquare) return;
+    if (boardSpec.sourceSquare && square !== boardSpec.sourceSquare) {
+      setHint("Drag the highlighted piece for this move.");
+      return;
+    }
+    setDragSource(square);
+    setSelectedSource(square);
+    setIllegalHint(null);
+  }
+
+  function handleDrop(targetSquare: string) {
+    if (!dragSource) return;
+    handlePickSquare(targetSquare, undefined, dragSource);
+    setDragSource(null);
+  }
+
+  const files = orientation === "white" ? ["a", "b", "c", "d", "e", "f", "g", "h"] : ["h", "g", "f", "e", "d", "c", "b", "a"];
+  const ranks = orientation === "white" ? [8, 7, 6, 5, 4, 3, 2, 1] : [1, 2, 3, 4, 5, 6, 7, 8];
+  const pieceMap = boardSpec.isExactPosition
+    ? new Map<string, string>(boardSpec.pieces.map((p) => [p.square, p.piece]))
+    : applyLessonPosition(getFullBoardPieceMap(), boardSpec.pieces ?? []);
 
   return (
     <div className={styles.boardLessonShell}>
-      <p className={styles.boardInstruction}>{lesson.board?.instruction}</p>
+      <p className={styles.boardInstruction}>{boardSpec.instruction}</p>
+      {boardSpec.fen ? (
+        <p className={styles.legalModeNote}>Legal-move mode: only chess-legal destination squares count.</p>
+      ) : null}
+      {illegalHint ? <p className={styles.illegalHint}>{illegalHint}</p> : null}
       <div className={styles.boardGrid}>
         {ranks.flatMap((rank) =>
           files.map((file, fileIndex) => {
             const square = `${file}${rank}`;
             const piece = pieceMap.get(square);
-            const isDark = (rank + fileIndex) % 2 === 0;
+            const boardFileIndex = file.charCodeAt(0) - "a".charCodeAt(0);
+            const isDark = (rank + boardFileIndex) % 2 === 0;
             const isSelected = selectedSquare === square;
-            const isSource = lesson.board?.sourceSquare === square;
-            const isCorrect = revealed && lesson.board?.targetSquare === square;
-            const isWrong = revealed && isSelected && lesson.board?.targetSquare !== square;
+            const isSource = (selectedSource ?? boardSpec.sourceSquare) === square;
+            const isCorrect = revealed && boardSpec.targetSquare === square;
+            const isWrong = revealed && isSelected && boardSpec.targetSquare !== square;
+            const isLegalHint = !revealed && legalDests.has(square);
 
             return (
               <button
                 key={square}
                 type="button"
                 aria-label={`Square ${square}`}
-                className={`${styles.boardSquare} ${isDark ? styles.boardSquareDark : styles.boardSquareLight} ${isSelected ? styles.boardSquareSelected : ""} ${isSource ? styles.boardSquareSource : ""} ${isCorrect ? styles.boardSquareCorrect : ""} ${isWrong ? styles.boardSquareWrong : ""}`}
-                onClick={() => onChooseSquare(square)}
+                className={`${styles.boardSquare} ${isDark ? styles.boardSquareDark : styles.boardSquareLight} ${isSelected ? styles.boardSquareSelected : ""} ${isSource ? styles.boardSquareSource : ""} ${isCorrect ? styles.boardSquareCorrect : ""} ${isWrong ? styles.boardSquareWrong : ""} ${isLegalHint ? styles.boardSquareLegalHint : ""}`}
+                onClick={() => handlePickSquare(square, piece)}
+                onDragOver={(event) => {
+                  if (!revealed && dragSource) event.preventDefault();
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  handleDrop(square);
+                }}
+                onDragEnd={() => setDragSource(null)}
+                draggable={Boolean(piece) && !revealed}
+                onDragStart={() => handleDragStart(square, piece)}
                 disabled={revealed}
               >
                 {piece ? (
                   <Image
                     src={getNeoPieceSrc(piece)}
                     alt={`Piece ${piece}`}
-                    className={styles.boardPieceImage}
+                    className={`${styles.boardPieceImage} ${lastMovedTo === square ? styles.boardPieceArrive : ""}`}
                     draggable={false}
                     width={56}
                     height={56}
                     unoptimized
                   />
                 ) : null}
-                {file === "a" ? <span className={styles.boardRank}>{rank}</span> : null}
-                {rank === 1 ? <span className={styles.boardFile}>{file}</span> : null}
+                {(orientation === "white" ? file === "a" : file === "h") ? <span className={styles.boardRank}>{rank}</span> : null}
+                {(orientation === "white" ? rank === 1 : rank === 8) ? <span className={styles.boardFile}>{file}</span> : null}
               </button>
             );
           }),
@@ -1160,7 +1691,7 @@ function pathClear(board: Map<string, string>, sx: number, sy: number, tx: numbe
   return true;
 }
 
-function toCoords(square: string) {
+function toCoords(square: string): [number, number] {
   const file = square.charCodeAt(0) - "a".charCodeAt(0);
   const rank = Number(square[1]) - 1;
   return [file, rank];
@@ -1190,7 +1721,7 @@ function buildDashboard(
   };
 }
 
-function buildTrainingTracks(repertoire: RepertoireResult, progress: TrainingProgress) {
+function buildTrainingTracks(repertoire: RepertoireResult, plan: SubscriptionPlan) {
   const entries = [
     { id: "white", label: "White", opening: repertoire.white },
     { id: "black-e4", label: "Black vs 1.e4", opening: repertoire.blackE4 },
@@ -1199,26 +1730,16 @@ function buildTrainingTracks(repertoire: RepertoireResult, progress: TrainingPro
 
   return entries.map((entry) => {
     const track = getTrainingTrack(entry.opening.key);
+    const lessons = filterLessonsForPlan(track.lessons, plan);
     return {
       ...entry,
       headline: track.headline,
       modules: track.modules,
       studies: track.studies,
-      lessons: [...track.lessons].sort((left, right) => getLessonPriority(left.id, progress.lessonStats) - getLessonPriority(right.id, progress.lessonStats)),
+      lessons,
+      totalLessonsInLibrary: track.lessons.length,
     };
   });
-}
-
-function getLessonPriority(lessonId: string, lessonStats: Record<string, LessonStat>) {
-  const stats = lessonStats[lessonId];
-  if (!stats) return -100;
-
-  const dueAt = stats.dueAt ? new Date(stats.dueAt).getTime() : 0;
-  const now = Date.now();
-  const dueScore = dueAt <= now ? -80 : Math.floor((dueAt - now) / (1000 * 60 * 60 * 24));
-  const accuracy = stats.attempts === 0 ? 0 : stats.correct / stats.attempts;
-
-  return dueScore + Math.round(accuracy * 40) - stats.attempts;
 }
 
 function applyLessonAttempt(progress: TrainingProgress, lessonId: string, wasCorrect: boolean): TrainingProgress {
@@ -1306,7 +1827,7 @@ function formatPlanLabel(plan: SubscriptionPlan) {
 
 function formatComparisonLines(
   usage: Array<{ opening: string; games: number; scoreRate: number }>,
-  scoring: Array<{ opening: string; scoreRate: number; averageOpponentRating: number | null }>,
+  scoring: Array<{ opening: string; games: number; scoreRate: number; averageOpponentRating: number | null }>,
 ) {
   if (usage.length === 0 && scoring.length === 0) {
     return ["Not enough recent public games in this bucket yet."];
@@ -1317,11 +1838,13 @@ function formatComparisonLines(
   const topScoring = scoring[0];
 
   if (topUsage) {
-    lines.push(`Most used: ${topUsage.opening} in ${topUsage.games} games with a ${Math.round(topUsage.scoreRate * 100)}% score rate.`);
+    lines.push(`Most used: ${topUsage.opening} in ${topUsage.games} games with a ${(topUsage.scoreRate * 100).toFixed(1)}% score rate.`);
   }
 
   if (topScoring) {
-    lines.push(`Best scoring: ${topScoring.opening} with a ${Math.round(topScoring.scoreRate * 100)}% score rate${topScoring.averageOpponentRating ? ` vs avg ${topScoring.averageOpponentRating}` : ""}.`);
+    lines.push(
+      `Best scoring: ${topScoring.opening} (${topScoring.games} games) with a ${(topScoring.scoreRate * 100).toFixed(1)}% score rate${topScoring.averageOpponentRating ? ` vs avg ${topScoring.averageOpponentRating}` : ""}.`,
+    );
   }
 
   if (topUsage && topScoring && topUsage.opening !== topScoring.opening) {

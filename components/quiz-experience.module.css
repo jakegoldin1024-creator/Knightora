@@ -105,11 +105,16 @@
 .trainingIntro,
 .metricCard p,
 .trackCard p,
+.trackCardBlurb,
 .lessonPrompt,
 .lessonFocus {
   color: var(--muted);
   line-height: 1.7;
   font-size: 1rem;
+}
+
+.trackCardBlurb {
+  display: block;
 }
 
 .heroActions {
@@ -461,14 +466,197 @@
   box-shadow: 0 18px 40px rgba(143, 59, 46, 0.12);
 }
 
-.trackCard h4,
+.trackCardTitle,
 .lessonShell h4 {
+  display: block;
   margin: 10px 0;
   font-size: 1.45rem;
   line-height: 1.2;
+  font-weight: 700;
+}
+
+.trackPlanHint {
+  display: block;
+  margin: 8px 0 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.lineStepBadge {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.lineDrillRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.lineCoachHint {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.drillRestartButton {
+  border: 1px solid var(--border);
+  background: rgba(255, 252, 246, 0.95);
+  color: var(--text);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.drillRestartButton:hover {
+  border-color: rgba(143, 59, 46, 0.45);
+  color: var(--brand);
+}
+
+.drillReview {
+  margin-top: 20px;
+  padding: 18px 20px;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.drillReview h4 {
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+}
+
+.drillReviewIntro {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.drillList {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text);
+}
+
+.drillJumpButton {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: inherit;
+}
+
+.drillJumpButton:hover {
+  color: var(--brand);
+}
+
+.drillEmpty {
+  margin: 8px 0 0;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.legalModeNote {
+  margin: 0 0 8px;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.illegalHint {
+  margin: 0 0 10px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #8f3b2e;
+}
+
+.boardSquareLegalHint {
+  box-shadow: inset 0 0 0 2px rgba(38, 70, 83, 0.35);
+}
+
+.enginePanel {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.engineRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.engineStatus {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.engineResult {
+  margin-top: 10px;
+}
+
+.enginePv {
+  margin: 8px 0 0;
+  color: var(--text);
+  font-size: 0.92rem;
+}
+
+.adminUnlockPanel {
+  margin-top: 18px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  border: 1px dashed var(--border);
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.adminUnlockPanel h3 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+}
+
+.adminUnlockPanel p {
+  margin: 0;
+}
+
+.adminUnlockRow {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.adminUnlockRow input {
+  min-width: 240px;
+  flex: 1;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.adminUnlockMessage {
+  margin-top: 8px !important;
+  font-size: 0.9rem;
+  color: var(--brand);
+  font-weight: 700;
 }
 
 .trackDueText {
+  display: block;
   margin-top: 10px;
   color: var(--brand);
   font-weight: 700;
@@ -481,9 +669,11 @@
   align-items: center;
   gap: 10px;
   margin-top: 16px;
+  width: 100%;
 }
 
 .progressBar {
+  display: block;
   width: 100%;
   height: 12px;
   border-radius: 999px;
@@ -501,6 +691,117 @@
 .lessonShell {
   margin-top: 24px;
   background: rgba(255, 255, 255, 0.72);
+}
+
+.pathSection {
+  margin-bottom: 18px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.pathHeaderRow h4 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.pathHeaderRow p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.pathRail {
+  margin-top: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.pathNodeWrap {
+  position: relative;
+  padding-left: 18px;
+}
+
+.pathConnector {
+  position: absolute;
+  left: 8px;
+  top: -10px;
+  bottom: -10px;
+  width: 3px;
+  border-radius: 999px;
+  background: rgba(30, 29, 26, 0.12);
+}
+
+.pathConnectorDone {
+  background: linear-gradient(180deg, rgba(37, 120, 72, 0.75), rgba(74, 222, 128, 0.8));
+}
+
+.pathNode {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    "orb title"
+    "orb meta";
+  column-gap: 10px;
+  row-gap: 2px;
+  align-items: center;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.88);
+  cursor: pointer;
+}
+
+.pathNode:disabled {
+  cursor: not-allowed;
+}
+
+.pathNodeCurrent {
+  border-color: rgba(208, 143, 61, 0.55);
+  box-shadow: 0 10px 24px rgba(208, 143, 61, 0.16);
+}
+
+.pathNodeDone {
+  border-color: rgba(37, 120, 72, 0.32);
+}
+
+.pathNodeLocked {
+  opacity: 0.55;
+}
+
+.pathNodeOrb {
+  grid-area: orb;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(145deg, #8f3b2e, #d08f3d);
+}
+
+.pathNodeDone .pathNodeOrb {
+  background: linear-gradient(145deg, #257848, #4ade80);
+}
+
+.pathNodeTitle {
+  grid-area: title;
+  font-weight: 700;
+  color: var(--text);
+  font-size: 0.94rem;
+}
+
+.pathNodeMeta {
+  grid-area: meta;
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .studyShelf {
@@ -568,6 +869,7 @@
   place-items: center;
   cursor: pointer;
   min-height: 68px;
+  transition: box-shadow 120ms ease, filter 120ms ease, transform 120ms ease;
 }
 
 .boardSquareLight {
@@ -583,7 +885,9 @@
 }
 
 .boardSquareSource {
-  box-shadow: inset 0 0 0 3px rgba(208, 143, 61, 0.95);
+  box-shadow:
+    inset 0 0 0 3px rgba(208, 143, 61, 0.95),
+    inset 0 0 0 999px rgba(208, 143, 61, 0.08);
 }
 
 .boardSquareCorrect {
@@ -600,6 +904,11 @@
   object-fit: contain;
   pointer-events: none;
   user-select: none;
+  transition: transform 180ms ease;
+}
+
+.boardPieceArrive {
+  transform: translate3d(0, 0, 0) scale(1.08);
 }
 
 .boardRank,

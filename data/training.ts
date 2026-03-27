@@ -1,3 +1,13 @@
+import type { SubscriptionPlan } from "@/lib/account-store";
+import type { OpeningLine } from "@/lib/opening-line";
+import { buildOpeningLineFromSanMoves } from "@/lib/opening-line";
+import {
+  CLUB_EXTRA_LINE_MOVES,
+  MAIN_LINE_MOVES,
+  PRO_EXTRA_LINE_MOVES,
+  STARTER_EXTRA_LINE_MOVES,
+} from "@/data/opening-line-sequences";
+
 export type TrainingLesson = {
   id: string;
   title: string;
@@ -15,6 +25,10 @@ export type TrainingLesson = {
       piece: string;
     }>;
   };
+  /** Multi-move opening line: tap each move in order (generated from SAN). */
+  line?: OpeningLine;
+  /** If set, lesson requires this plan tier or higher. */
+  minPlan?: SubscriptionPlan;
 };
 
 export type TrainingTrack = {
@@ -599,6 +613,100 @@ export const trainingCatalog: Record<string, TrainingTrack> = {
   },
 };
 
+const PLAN_ORDER: SubscriptionPlan[] = ["free", "starter", "club", "pro", "admin"];
+
+function planRank(plan: SubscriptionPlan): number {
+  const order = PLAN_ORDER.indexOf(plan);
+  return order >= 0 ? order : 0;
+}
+
+export function isLessonUnlockedForPlan(lesson: TrainingLesson, plan: SubscriptionPlan): boolean {
+  const min = lesson.minPlan ?? "free";
+  return planRank(plan) >= planRank(min);
+}
+
+export function filterLessonsForPlan(lessons: TrainingLesson[], plan: SubscriptionPlan): TrainingLesson[] {
+  return lessons.filter((lesson) => isLessonUnlockedForPlan(lesson, plan));
+}
+
+function lineLessonFromMoves(
+  id: string,
+  title: string,
+  focus: string,
+  moves: string[],
+  explanation: string,
+  minPlan?: SubscriptionPlan,
+): TrainingLesson {
+  const line = buildOpeningLineFromSanMoves(moves);
+  return {
+    id,
+    title,
+    focus,
+    prompt: `Full line (${moves.length} moves): tap each half-move in order. ${moves.slice(0, 10).join(" ")}${moves.length > 10 ? " …" : ""}`,
+    choices: [],
+    answer: line.steps[line.steps.length - 1].targetSquare,
+    explanation,
+    line,
+    minPlan,
+  };
+}
+
+function buildTieredLineLessons(openingKey: string): TrainingLesson[] {
+  const out: TrainingLesson[] = [];
+  const main = MAIN_LINE_MOVES[openingKey];
+  if (main) {
+    out.push(
+      lineLessonFromMoves(
+        `${openingKey}-main-line`,
+        "Main line — full drill",
+        "Full line",
+        main,
+        `You walked through ${main.length} plies of a principled main line. This is how Knightora builds real repertoire memory: move order, not just slogan-level ideas.`,
+      ),
+    );
+  }
+  const starter = STARTER_EXTRA_LINE_MOVES[openingKey];
+  if (starter) {
+    out.push(
+      lineLessonFromMoves(
+        `${openingKey}-line-starter`,
+        "Starter — extra branch",
+        "Theory depth",
+        starter,
+        `A second main branch (${starter.length} plies) to widen your tree while keeping the same structure-first mindset.`,
+        "starter",
+      ),
+    );
+  }
+  const club = CLUB_EXTRA_LINE_MOVES[openingKey];
+  if (club) {
+    out.push(
+      lineLessonFromMoves(
+        `${openingKey}-line-club`,
+        "Club — heavier continuation",
+        "Line depth",
+        club,
+        `A longer fight (${club.length} plies) in the middlegame transition from your opening.`,
+        "club",
+      ),
+    );
+  }
+  const pro = PRO_EXTRA_LINE_MOVES[openingKey];
+  if (pro) {
+    out.push(
+      lineLessonFromMoves(
+        `${openingKey}-line-pro`,
+        "Pro — deep theory",
+        "Maximum depth",
+        pro,
+        `A maximal single-line drill (${pro.length} plies) for when you want tournament-grade depth.`,
+        "pro",
+      ),
+    );
+  }
+  return out;
+}
+
 export function getTrainingTrack(openingKey: string): TrainingTrack {
   const baseTrack =
     trainingCatalog[openingKey] ?? {
@@ -630,6 +738,7 @@ export function getTrainingTrack(openingKey: string): TrainingTrack {
       `Use ${baseTrack.modules[2].toLowerCase()} as the final review pass after the basics feel natural.`,
     ],
     lessons: [
+      ...buildTieredLineLessons(openingKey),
       ...baseTrack.lessons,
       {
         id: `${openingKey}-review-1`,

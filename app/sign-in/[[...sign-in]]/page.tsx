@@ -41,6 +41,7 @@ export default function Page() {
             routing="path"
             signUpUrl="/sign-up"
             fallbackRedirectUrl="/"
+            oauthFlow="redirect"
             appearance={{
               elements: {
                 rootBox: "mx-auto",

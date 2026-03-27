@@ -10,6 +10,7 @@ type ChessGame = {
   pgn?: string;
   eco?: string;
   time_class?: string;
+  end_time?: number;
   white?: ChessPlayer;
   black?: ChessPlayer;
 };
@@ -43,6 +44,8 @@ type OpeningAccumulator = {
   opponentRatingTotal: number;
   opponentRatingGames: number;
 };
+
+type OpeningLane = "white" | "blackE4" | "blackD4";
 
 export type ChessInsights = {
   username: string;
@@ -98,6 +101,8 @@ const openingKeyMatchers: Record<string, RegExp[]> = {
   kid: [/king'?s indian/i],
   nimzo: [/nimzo-indian/i],
 };
+const MIN_GAMES_FOR_SCORING = 3;
+const MIN_GAMES_FOR_REASON = 4;
 
 export async function buildChessProfile(username: string, quizProfile: QuizProfile): Promise<ChessProfileResponse> {
   const insights = await fetchChessInsights(username);
@@ -132,7 +137,8 @@ export async function fetchChessInsights(username: string): Promise<ChessInsight
   }
 
   const archivesData = (await archivesResponse.json()) as ChessArchivesIndex;
-  const archives = (archivesData.archives ?? []).slice(-3).reverse();
+  // Use a deeper recent window so opening signals reflect real habits.
+  const archives = (archivesData.archives ?? []).slice(-12).reverse();
 
   if (archives.length === 0) {
     throw new Error("No public game archives were found for that Chess.com username.");
@@ -153,7 +159,16 @@ export async function fetchChessInsights(username: string): Promise<ChessInsight
     }),
   );
 
-  const games = archiveResponses.flatMap((archive) => archive.games ?? []).slice(-120);
+  const allRecentGames = archiveResponses.flatMap((archive) => archive.games ?? []);
+  const games = allRecentGames
+    .map((game, index) => ({
+      game,
+      // Chess.com exposes unix seconds; fallback keeps deterministic ordering.
+      endTime: typeof game.end_time === "number" ? game.end_time : index,
+    }))
+    .sort((left, right) => right.endTime - left.endTime)
+    .slice(0, 120)
+    .map((entry) => entry.game);
   if (games.length === 0) {
     throw new Error("We found the player, but there were no recent public games to analyze.");
   }
@@ -166,7 +181,12 @@ function analyzeGames(username: string, games: ChessGame[], archivesChecked: num
   const blackVsE4 = new Map<string, OpeningAccumulator>();
   const blackVsD4 = new Map<string, OpeningAccumulator>();
   const timeClasses = new Map<string, number>();
-  const openingBoosts: Record<string, number> = {};
+  const openingBoostAccumulators: Record<OpeningLane, Record<string, number>> = {
+    white: {},
+    blackE4: {},
+    blackD4: {},
+  };
+  const laneGames: Record<OpeningLane, number> = { white: 0, blackE4: 0, blackD4: 0 };
 
   let sharpSignals = 0;
   let solidSignals = 0;
@@ -180,7 +200,7 @@ function analyzeGames(username: string, games: ChessGame[], archivesChecked: num
     const color = getPlayerColor(game, username);
     if (!color) continue;
 
-    const openingName = extractOpeningName(game) ?? "Unclassified opening";
+    const openingName = normalizeOpeningFamily(extractOpeningName(game) ?? "Unclassified opening");
     const result = normalizeResult(color === "white" ? game.white?.result : game.black?.result);
     const timeClass = normalizeTimeControl(game.time_class);
 
@@ -208,17 +228,21 @@ function analyzeGames(username: string, games: ChessGame[], archivesChecked: num
       },
     });
 
-    boostFromOpening(openingName, openingBoosts);
-
     if (color === "white") {
+      laneGames.white += 1;
+      boostFromOpening(openingName, openingBoostAccumulators.white);
       updateOpeningStat(whiteOpenings, openingName, result, getOpponentRating(game, color));
       continue;
     }
 
     const defenseBucket = classifyBlackDefense(openingName, game);
     if (defenseBucket === "e4") {
+      laneGames.blackE4 += 1;
+      boostFromOpening(openingName, openingBoostAccumulators.blackE4);
       updateOpeningStat(blackVsE4, openingName, result, getOpponentRating(game, color));
     } else if (defenseBucket === "d4") {
+      laneGames.blackD4 += 1;
+      boostFromOpening(openingName, openingBoostAccumulators.blackD4);
       updateOpeningStat(blackVsD4, openingName, result, getOpponentRating(game, color));
     }
   }
@@ -241,6 +265,7 @@ function analyzeGames(username: string, games: ChessGame[], archivesChecked: num
   const whiteBestScoring = sortOpeningStats(whiteOpenings, "score");
   const blackVsE4BestScoring = sortOpeningStats(blackVsE4, "score");
   const blackVsD4BestScoring = sortOpeningStats(blackVsD4, "score");
+  const openingBoosts = normalizeOpeningBoosts(openingBoostAccumulators, laneGames);
 
   const recommendationReasons = {
     white: buildRecommendationReason(whiteTopOpenings, whiteBestScoring),
@@ -250,6 +275,7 @@ function analyzeGames(username: string, games: ChessGame[], archivesChecked: num
 
   const summary = [
     `Analyzed ${games.length} recent public games across ${archivesChecked} Chess.com archive months.`,
+    `Detected time control preference: ${detectedTimeControl ?? "mixed/unknown"}.`,
     buildOpeningSummary("White", whiteTopOpenings, whiteBestScoring),
     buildOpeningSummary("Black vs 1.e4", blackVsE4TopDefenses, blackVsE4BestScoring),
     buildOpeningSummary("Black vs 1.d4", blackVsD4TopDefenses, blackVsD4BestScoring),
@@ -325,6 +351,45 @@ function extractOpeningName(game: ChessGame): string | null {
   return null;
 }
 
+function normalizeOpeningFamily(rawOpening: string): string {
+  const opening = rawOpening
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^(king'?s pawn game|queen'?s pawn game)\s*:?\s*/i, "");
+
+  const families: Array<{ name: string; rx: RegExp }> = [
+    { name: "Italian Game", rx: /(italian|giuoco|two knights defense|evans gambit)/i },
+    { name: "Scotch Game", rx: /(scotch)/i },
+    { name: "Ruy Lopez", rx: /(ruy lopez|spanish game)/i },
+    { name: "Sicilian Defense", rx: /(sicilian)/i },
+    { name: "Caro-Kann Defense", rx: /(caro-kann)/i },
+    { name: "French Defense", rx: /(french defense)/i },
+    { name: "Scandinavian Defense", rx: /(scandinavian|center counter)/i },
+    { name: "Pirc Defense", rx: /(pirc)/i },
+    { name: "Modern Defense", rx: /(modern defense|robatsch)/i },
+    { name: "Queen's Gambit", rx: /(queen'?s gambit|qg accepted|qg declined|catalan)/i },
+    { name: "London System", rx: /(london)/i },
+    { name: "Slav Defense", rx: /(slav|semi-slav)/i },
+    { name: "King's Indian Defense", rx: /(king'?s indian)/i },
+    { name: "Nimzo-Indian Defense", rx: /(nimzo-indian)/i },
+    { name: "Grunfeld Defense", rx: /(grunfeld|grünfeld)/i },
+    { name: "English Opening", rx: /(english opening)/i },
+    { name: "Reti Opening", rx: /(reti|réti)/i },
+    { name: "Dutch Defense", rx: /(dutch defense)/i },
+    { name: "Benoni Defense", rx: /(benoni|benko)/i },
+  ];
+
+  for (const family of families) {
+    if (family.rx.test(opening)) return family.name;
+  }
+
+  const colonIndex = opening.indexOf(":");
+  if (colonIndex > 0) {
+    return opening.slice(0, colonIndex).trim();
+  }
+  return opening;
+}
+
 function updateOpeningStat(
   store: Map<string, OpeningAccumulator>,
   opening: string,
@@ -361,7 +426,9 @@ function updateOpeningStat(
 }
 
 function sortOpeningStats(store: Map<string, OpeningAccumulator>, mode: "usage" | "score"): OpeningStat[] {
+  const minGamesForScore = mode === "score" ? MIN_GAMES_FOR_SCORING : 1;
   return [...store.values()]
+    .filter((entry) => entry.games >= minGamesForScore)
     .map(toOpeningStat)
     .sort((left, right) => {
       if (mode === "usage") {
@@ -379,7 +446,9 @@ function sortOpeningStats(store: Map<string, OpeningAccumulator>, mode: "usage" 
 
 function toOpeningStat(accumulator: OpeningAccumulator): OpeningStat {
   const scoreRate = accumulator.games === 0 ? 0 : accumulator.points / accumulator.games;
-  const sampleBonus = Math.min(0.18, Math.log2(accumulator.games + 1) * 0.045);
+  const prior = 0.5;
+  const priorWeight = 6;
+  const weightedScore = (accumulator.points + priorWeight * prior) / (accumulator.games + priorWeight);
 
   return {
     opening: accumulator.opening,
@@ -388,12 +457,30 @@ function toOpeningStat(accumulator: OpeningAccumulator): OpeningStat {
     draws: accumulator.draws,
     losses: accumulator.losses,
     scoreRate,
-    weightedScore: scoreRate + sampleBonus,
+    weightedScore,
     averageOpponentRating:
       accumulator.opponentRatingGames > 0
         ? Math.round(accumulator.opponentRatingTotal / accumulator.opponentRatingGames)
         : null,
   };
+}
+
+function normalizeOpeningBoosts(
+  laneBoosts: Record<OpeningLane, Record<string, number>>,
+  laneGames: Record<OpeningLane, number>,
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const lane of ["white", "blackE4", "blackD4"] as const) {
+    const totalGames = laneGames[lane];
+    if (totalGames === 0) continue;
+    for (const [openingKey, rawCount] of Object.entries(laneBoosts[lane])) {
+      const familiarity = rawCount / (totalGames * 2);
+      if (familiarity < 0.12) continue;
+      const boost = Math.min(4, Math.max(1, Math.round(familiarity * 8)));
+      out[openingKey] = Math.max(out[openingKey] ?? 0, boost);
+    }
+  }
+  return out;
 }
 
 function pickMostFrequentTimeControl(timeClasses: Map<string, number>): TimeControl | undefined {
@@ -504,6 +591,9 @@ function buildRecommendationReason(usage: OpeningStat[], scoring: OpeningStat[])
   const topScoring = scoring[0];
 
   if (!topUsage && !topScoring) return undefined;
+  if ((topUsage?.games ?? 0) < MIN_GAMES_FOR_REASON && (topScoring?.games ?? 0) < MIN_GAMES_FOR_REASON) {
+    return undefined;
+  }
   if (topUsage && topScoring && topUsage.opening !== topScoring.opening) {
     return `You play ${topUsage.opening} most, but your best recent results come from ${topScoring.opening}.`;
   }

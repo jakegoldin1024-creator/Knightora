@@ -4,6 +4,10 @@ import Stripe from "stripe";
 import { getPlanForPriceId, getStripeClient } from "@/lib/billing";
 import { updateSubscriptionByUserId } from "@/lib/account-store";
 
+function isEntitlementActive(status: Stripe.Subscription.Status): boolean {
+  return status === "active" || status === "trialing";
+}
+
 export async function POST(request: NextRequest) {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!webhookSecret) {
@@ -41,8 +45,12 @@ export async function POST(request: NextRequest) {
       const userId = subscription.metadata?.userId;
       const priceId = subscription.items.data[0]?.price?.id;
       const plan = priceId ? getPlanForPriceId(priceId) : null;
-      if (userId && plan) {
-        await updateSubscriptionByUserId(userId, plan);
+      if (userId) {
+        if (plan && isEntitlementActive(subscription.status)) {
+          await updateSubscriptionByUserId(userId, plan);
+        } else {
+          await updateSubscriptionByUserId(userId, "free");
+        }
       }
     }
 

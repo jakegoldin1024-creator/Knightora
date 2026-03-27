@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionCookieName, registerUser, type SubscriptionPlan } from "@/lib/account-store";
+import { getSessionCookieName, registerUser } from "@/lib/account-store";
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,14 +8,14 @@ export async function POST(request: NextRequest) {
       name?: string;
       email?: string;
       password?: string;
-      subscriptionPlan?: SubscriptionPlan;
     };
 
     const result = await registerUser({
       name: body.name ?? "",
       email: body.email ?? "",
       password: body.password ?? "",
-      subscriptionPlan: body.subscriptionPlan ?? "free",
+      // Always start on free; paid/admin entitlements come from Stripe/admin flow only.
+      subscriptionPlan: "free",
     });
 
     const cookieStore = await cookies();

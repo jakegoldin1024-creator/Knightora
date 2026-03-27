@@ -30,11 +30,16 @@ export type RepertoireResult = {
   blackD4: RankedOpening;
 };
 
+type RepertoireLane = "white" | "blackE4" | "blackD4";
+
 export function getRepertoire(profile: QuizProfile, insights?: ChessInsights): RepertoireResult {
+  const whiteRanked = rankOpenings(openingCatalog.white, profile, "white", insights);
+  const blackE4Ranked = rankOpenings(openingCatalog.blackE4, profile, "blackE4", insights);
+  const blackD4Ranked = rankOpenings(openingCatalog.blackD4, profile, "blackD4", insights);
   return {
-    white: rankOpenings(openingCatalog.white, profile, insights)[0],
-    blackE4: rankOpenings(openingCatalog.blackE4, profile, insights)[0],
-    blackD4: rankOpenings(openingCatalog.blackD4, profile, insights)[0],
+    white: whiteRanked[0] ?? whiteRanked.at(-1)!,
+    blackE4: blackE4Ranked[0] ?? blackE4Ranked.at(-1)!,
+    blackD4: blackD4Ranked[0] ?? blackD4Ranked.at(-1)!,
   };
 }
 
@@ -60,18 +65,21 @@ export function describeGoal(goal: Goal): string {
   return "counterplay and active chances";
 }
 
-function rankOpenings(openings: Opening[], profile: QuizProfile, insights?: ChessInsights): RankedOpening[] {
+function rankOpenings(openings: Opening[], profile: QuizProfile, lane: RepertoireLane, insights?: ChessInsights): RankedOpening[] {
   return openings
-    .map((opening) => ({
-      ...opening,
-      score: calculateScore(opening, profile, insights),
-      confidence: calculateConfidence(profile, insights),
-      evidence: buildEvidence(opening, profile, insights),
-    }))
+    .map((opening) => {
+      const score = calculateScore(opening, profile, lane, insights);
+      return {
+        ...opening,
+        score,
+        confidence: calculateOpeningConfidence(opening, lane, profile, score, insights),
+        evidence: buildEvidence(opening, profile, lane, insights),
+      };
+    })
     .sort((left, right) => right.score - left.score);
 }
 
-function calculateScore(opening: Opening, profile: QuizProfile, insights?: ChessInsights): number {
+function calculateScore(opening: Opening, profile: QuizProfile, lane: RepertoireLane, insights?: ChessInsights): number {
   let score = 0;
 
   if (opening.tags.includes(profile.positionType)) score += 3;
@@ -92,18 +100,50 @@ function calculateScore(opening: Opening, profile: QuizProfile, insights?: Chess
   if (insights?.styleHints.risk && opening.tags.includes(insights.styleHints.risk)) score += 2;
   if (insights?.styleHints.theory && opening.tags.includes(insights.styleHints.theory)) score += 2;
   if (insights?.styleHints.goal && opening.tags.includes(insights.styleHints.goal)) score += 2;
-  score += getPerformanceBoost(opening.key, insights);
+  score += getPerformanceBoost(opening.key, lane, insights);
 
   return score;
 }
 
-function calculateConfidence(profile: QuizProfile, insights?: ChessInsights): number {
-  const baseScore = profile.username ? 64 : 56;
-  if (!insights) return baseScore;
-  return Math.min(94, baseScore + Math.min(24, Math.floor(insights.gamesAnalyzed / 6)));
+function calculateOpeningConfidence(
+  opening: Opening,
+  lane: RepertoireLane,
+  profile: QuizProfile,
+  score: number,
+  insights?: ChessInsights,
+): number {
+  const profileMatchCount = [
+    opening.tags.includes(profile.positionType),
+    opening.tags.includes(profile.goal),
+    opening.tags.includes(profile.theory),
+    opening.tags.includes(profile.risk),
+    opening.tags.includes(profile.timeControl),
+    opening.tags.includes(profile.rating),
+  ].filter(Boolean).length;
+  const profileFit = Math.round((profileMatchCount / 6) * 18);
+  if (!insights) return Math.max(54, 58 + profileFit);
+
+  const laneStats =
+    lane === "white"
+      ? [...insights.whiteTopOpenings, ...insights.whiteBestScoring]
+      : lane === "blackE4"
+        ? [...insights.blackVsE4TopDefenses, ...insights.blackVsE4BestScoring]
+        : [...insights.blackVsD4TopDefenses, ...insights.blackVsD4BestScoring];
+  const matching = laneStats.filter((stat) => matchesOpeningKey(opening.key, stat.opening));
+  const strongest = matching.sort((a, b) => b.games - a.games)[0] ?? null;
+  const sampleGames = strongest?.games ?? 0;
+  const sampleScore = strongest?.weightedScore ?? 0.5;
+
+  // Stabilize confidence by sample size, profile fit, and consistency signal.
+  const sampleConfidence = Math.round(Math.min(1, sampleGames / 24) * 26);
+  const performanceConfidence = Math.round(Math.max(0, (sampleScore - 0.45) / 0.25) * 12);
+  const boostConfidence = Math.min(10, (insights.openingBoosts[opening.key] ?? 0) * 2);
+  const scoreSignal = Math.max(0, Math.min(10, Math.round((score - 8) * 0.9)));
+
+  return Math.max(51, Math.min(95, 48 + profileFit + sampleConfidence + performanceConfidence + boostConfidence + scoreSignal));
 }
 
-function buildEvidence(opening: Opening, profile: QuizProfile, insights?: ChessInsights): string[] {
+function buildEvidence(opening: Opening, profile: QuizProfile, lane: RepertoireLane, insights?: ChessInsights): string[] {
   const evidence: string[] = [];
 
   if (opening.tags.includes(profile.goal)) {
@@ -126,7 +166,7 @@ function buildEvidence(opening: Opening, profile: QuizProfile, insights?: ChessI
     evidence.push(`Recent games suggest you naturally reach ${insights.styleHints.positionType} positions.`);
   }
 
-  const performanceEvidence = getPerformanceEvidence(opening.key, insights);
+  const performanceEvidence = getPerformanceEvidence(opening.key, lane, insights);
   if (performanceEvidence) {
     evidence.push(performanceEvidence);
   }
@@ -138,26 +178,29 @@ function buildEvidence(opening: Opening, profile: QuizProfile, insights?: ChessI
   return evidence.slice(0, 3);
 }
 
-function getPerformanceBoost(openingKey: string, insights?: ChessInsights): number {
+function getPerformanceBoost(openingKey: string, lane: RepertoireLane, insights?: ChessInsights): number {
   if (!insights) return 0;
 
-  const matchingStats = [
-    ...insights.whiteBestScoring,
-    ...insights.blackVsE4BestScoring,
-    ...insights.blackVsD4BestScoring,
-  ].filter((stat) => matchesOpeningKey(openingKey, stat.opening));
+  const laneStats =
+    lane === "white"
+      ? insights.whiteBestScoring
+      : lane === "blackE4"
+        ? insights.blackVsE4BestScoring
+        : insights.blackVsD4BestScoring;
+  const matchingStats = laneStats.filter((stat) => matchesOpeningKey(openingKey, stat.opening));
 
   if (matchingStats.length === 0) return 0;
 
   const bestStat = matchingStats.sort((left, right) => right.weightedScore - left.weightedScore)[0];
+  if (!bestStat) return 0;
   return Math.round(bestStat.weightedScore * 4);
 }
 
-function getPerformanceEvidence(openingKey: string, insights?: ChessInsights): string | null {
+function getPerformanceEvidence(openingKey: string, lane: RepertoireLane, insights?: ChessInsights): string | null {
   if (!insights) return null;
 
-  const reasons = Object.values(insights.recommendationReasons);
-  const matchingReason = reasons.find((reason) => reason && matchesOpeningKey(openingKey, reason));
+  const reason = insights.recommendationReasons[lane];
+  const matchingReason = reason && matchesOpeningKey(openingKey, reason) ? reason : null;
   return matchingReason ?? null;
 }
 
@@ -166,7 +209,7 @@ function matchesOpeningKey(openingKey: string, text: string): boolean {
   const aliases: Record<string, string[]> = {
     italian: ["italian", "giuoco"],
     london: ["london"],
-    qg: ["queen's gambit", "queens gambit", "catalan"],
+    qg: ["queen's gambit", "queens gambit"],
     scotch: ["scotch"],
     caro: ["caro-kann", "caro kann"],
     sicilian: ["sicilian"],

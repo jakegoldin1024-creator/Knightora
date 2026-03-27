@@ -17,6 +17,7 @@ This workspace now contains two versions:
   - 1 opening with Black versus `1.e4`
   - 1 opening with Black versus `1.d4`
 - Shared recommendation logic separated from the UI in the Next.js version
+- **Opening training**: board drills include **full-line lessons** (multi-move sequences generated with `chess.js` from real SAN). The **free** plan includes the main line plus the rest of the core lesson pack for each repertoire track; **Starter / Club / Pro** unlock extra branch lines and deeper theory (see `data/opening-line-sequences.ts` and `filterLessonsForPlan` in `data/training.ts`).
 
 ## Running the Next.js app
 
@@ -27,6 +28,8 @@ npm run dev
 ```
 
 Then visit `http://localhost:3000` (or the fallback port shown in the terminal if 3000 is in use).
+
+Board drills use **chess.js** for the multi-move lines: each position is stored as a **FEN** before the next half-move, and taps must be **legal destinations** for the piece that should move (with optional highlighted legal squares). Single-move board puzzles build a FEN from the diagram when possible so the same rules apply.
 
 ### Clerk sign-in (recommended)
 
