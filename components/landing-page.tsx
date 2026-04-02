@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SiteNav } from "@/components/site-nav";
 import { LandingSignInCard } from "@/components/landing-signin-card";
+import { LandingHeroBoard } from "@/components/landing-hero-board";
 import styles from "./landing-page.module.css";
 
 export function LandingPage() {
@@ -10,12 +11,11 @@ export function LandingPage() {
       <main className={styles.shell}>
         <section className={styles.hero}>
           <div className={styles.panel}>
-            <p className={styles.eyebrow}>Focused opening prep</p>
+            <p className={styles.eyebrow}>Opening prep</p>
             <h1 className={styles.title}>Turn prep into pressure.</h1>
-            <p className={styles.onboardingNotice}>Step 1: Sign in first to save your training path and unlock guided progress.</p>
+            <p className={styles.onboardingNotice}>Step 1: Sign in so your lines and progress save.</p>
             <p className={styles.lede}>
-              Knightora helps you pick the right repertoire, rehearse full lines on a board, and improve from your own games. Full training and analysis
-              unlock with one subscription ($9.99/mo or $99.99/yr) — see Pricing.
+              Board drills on real positions. One subscription unlocks every branch, Stockfish on lessons, and full-game analysis.
             </p>
             <div className={styles.actions}>
               <Link className={styles.btn} href="/sign-in">
@@ -25,36 +25,38 @@ export function LandingPage() {
                 Open quiz
               </Link>
               <Link className={styles.btnAlt} href="/analysis">
-                Game analysis
+                Analysis
               </Link>
               <Link className={styles.btnAlt} href="/pricing">
-                Pricing & FAQ
+                Pricing
               </Link>
             </div>
           </div>
-          <aside className={styles.panel}>
-            <p className={styles.eyebrow}>What you get</p>
-            <ul className={styles.list}>
-              <li>Personalized opening recommendations from your profile and games.</li>
-              <li>Move-order drills with chapter flow and deviation handling.</li>
-              <li>Full-game coaching summaries with practical move alternatives.</li>
-              <li>Progress tracking and spaced review behavior for weak lessons.</li>
-            </ul>
-          </aside>
+          <div className={styles.heroBoardColumn}>
+            <LandingHeroBoard />
+            <aside className={styles.panelMuted}>
+              <p className={styles.eyebrow}>On the board</p>
+              <ul className={styles.listTight}>
+                <li>Main-line drills free · deeper branches with sub</li>
+                <li>Quiz → repertoire → chapter lessons</li>
+                <li>PGN coach summaries when subscribed</li>
+              </ul>
+            </aside>
+          </div>
         </section>
 
         <section className={styles.sections}>
           <article className={styles.panel}>
-            <h3>1) Choose</h3>
-            <p>Identify a repertoire matched to your style and time control.</p>
+            <h3>Choose</h3>
+            <p>Repertoire matched to how you play.</p>
           </article>
           <article className={styles.panel}>
-            <h3>2) Drill</h3>
-            <p>Practice full lines and side branches until the move order sticks.</p>
+            <h3>Drill</h3>
+            <p>Move order on a real board—not walls of text.</p>
           </article>
           <article className={styles.panel}>
-            <h3>3) Improve</h3>
-            <p>Analyze real games and convert mistakes into targeted training.</p>
+            <h3>Improve</h3>
+            <p>Turn games into the next lesson.</p>
           </article>
         </section>
 

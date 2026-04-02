@@ -1,0 +1,82 @@
+.wrap {
+  position: relative;
+  width: min(100%, 320px);
+  margin: 0 auto;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(38, 70, 83, 0.18);
+  border: 3px solid rgba(38, 70, 83, 0.35);
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+}
+
+.light {
+  background: #f0d9b5;
+}
+
+.dark {
+  background: #b58863;
+}
+
+.pieceLayer {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  pointer-events: none;
+}
+
+.piece {
+  place-self: center;
+  width: 58%;
+  height: 58%;
+  border-radius: 50%;
+  opacity: 0.92;
+}
+
+.pawn {
+  background: radial-gradient(circle at 35% 30%, #fff 0%, #e8e0d5 45%, #c4b8a8 100%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.rook,
+.knight,
+.bishop,
+.queen,
+.king {
+  background: radial-gradient(circle at 35% 28%, #fff 0%, #e2ddd4 40%, #9a8f82 100%);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.22);
+}
+
+.pawnDark {
+  background: radial-gradient(circle at 35% 30%, #6a5a4a 0%, #3d3329 100%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+}
+
+.kingDark {
+  width: 62%;
+  height: 62%;
+  background: radial-gradient(circle at 35% 28%, #5c4d3f 0%, #2a221c 100%);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+}
+
+.coordCorner {
+  position: absolute;
+  bottom: 6px;
+  right: 8px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: rgba(38, 70, 83, 0.55);
+  text-transform: lowercase;
+}

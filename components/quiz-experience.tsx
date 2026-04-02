@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type FormEvent } from "react";
 import { filterLessonsForPlan, getTrainingTrack, type TrainingLesson, type TrainingVariation } from "@/data/training";
 import { type SubscriptionPlan, isPaidPlan } from "@/lib/subscription";
-import { PRICING_PLANS } from "@/lib/pricing-plans";
 import { buildFenFromKnightoraPlacements, inferSideToMoveFromSource } from "@/lib/board-fen";
 import { getLegalDestinationsForSource, isLegalDestinationForSource } from "@/lib/move-legality";
 import { analyzeFenWithStockfish, type StockfishEval } from "@/lib/stockfish-client";
@@ -185,6 +184,7 @@ export function QuizExperience() {
   const [showPickExtras, setShowPickExtras] = useState(false);
   const [dashboardTab, setDashboardTab] = useState<"overview" | "openings" | "training">("overview");
   const [chapterCelebration, setChapterCelebration] = useState<string | null>(null);
+  const [reduceMotion, setReduceMotion] = useState(false);
   /** pick = choose opening, intro = opening context, linePrimer = basics overview, variationSelect = choose branch, course = lesson path */
   const [trainingUiPhase, setTrainingUiPhase] = useState<"pick" | "intro" | "linePrimer" | "variationSelect" | "course">("pick");
   const [trainingSession, setTrainingSession] = useState<TrainingSessionState>({
@@ -305,11 +305,14 @@ export function QuizExperience() {
     const hasDashboard = Boolean(activeDashboard);
     if (hasDashboard && !hadDashboardRef.current) {
       window.setTimeout(() => {
-        document.getElementById("dashboard")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        document.getElementById("dashboard")?.scrollIntoView({
+          behavior: reduceMotion ? "auto" : "smooth",
+          block: "start",
+        });
       }, 120);
     }
     hadDashboardRef.current = hasDashboard;
-  }, [activeDashboard]);
+  }, [activeDashboard, reduceMotion]);
 
   useEffect(() => {
     if (!latestDashboardRef.current || !accountUser) return;
@@ -484,17 +487,19 @@ export function QuizExperience() {
     const key = `${activeLesson.id}:${trainingSession.lineStepIndex}:${trainingSession.selectedChoice ?? ""}`;
     if (lessonCelebrationKeyRef.current === key) return;
     lessonCelebrationKeyRef.current = key;
-    setLessonCelebrationBurst((b) => b + 1);
-    setLessonCelebrationActive(true);
-    if (lessonConfettiTimerRef.current != null) window.clearTimeout(lessonConfettiTimerRef.current);
-    lessonConfettiTimerRef.current = window.setTimeout(() => {
-      setLessonCelebrationActive(false);
-      lessonConfettiTimerRef.current = null;
-    }, 1150);
+    if (!reduceMotion) {
+      setLessonCelebrationBurst((b) => b + 1);
+      setLessonCelebrationActive(true);
+      if (lessonConfettiTimerRef.current != null) window.clearTimeout(lessonConfettiTimerRef.current);
+      lessonConfettiTimerRef.current = window.setTimeout(() => {
+        setLessonCelebrationActive(false);
+        lessonConfettiTimerRef.current = null;
+      }, 1150);
+    }
     window.setTimeout(() => {
-      lessonFeedbackRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      lessonFeedbackRef.current?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "nearest" });
     }, 80);
-  }, [activeLesson, trainingSession.revealed, trainingSession.selectedChoice, trainingSession.lineStepIndex]);
+  }, [activeLesson, trainingSession.revealed, trainingSession.selectedChoice, trainingSession.lineStepIndex, reduceMotion]);
 
   useEffect(() => {
     recordUxEvent("phase_entered", {
@@ -503,6 +508,14 @@ export function QuizExperience() {
       variationId: selectedVariationId,
     });
   }, [trainingUiPhase, trainingSession.trackId, selectedVariationId]);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReduceMotion(mq.matches);
+    const onChange = () => setReduceMotion(mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
 
   async function loadAccount() {
     try {
@@ -637,9 +650,19 @@ export function QuizExperience() {
       body: JSON.stringify({ plan: "paid" as SubscriptionPlan, interval }),
     });
 
-    const payload = (await response.json()) as { url?: string; error?: string };
+    let payload: { url?: string; error?: string } = {};
+    try {
+      payload = (await response.json()) as { url?: string; error?: string };
+    } catch {
+      setAccountError(`Checkout failed (${response.status}). Check Stripe env vars on the server.`);
+      return;
+    }
     if (!response.ok || !payload.url) {
-      setAccountError(payload.error ?? "Unable to start billing checkout.");
+      const hint =
+        response.status === 500 && (payload.error ?? "").toLowerCase().includes("stripe")
+          ? " Add STRIPE_SECRET_KEY and price IDs in Vercel (or .env.local)."
+          : "";
+      setAccountError((payload.error ?? "Unable to start billing checkout.") + hint);
       return;
     }
 
@@ -780,6 +803,7 @@ export function QuizExperience() {
           revealed: false,
         }));
         clearLineAdvanceTimer();
+        const stepDelayMs = reduceMotion ? 1100 : 720;
         lineAdvanceTimeoutRef.current = window.setTimeout(() => {
           setTrainingSession((current) => ({
             ...current,
@@ -788,7 +812,7 @@ export function QuizExperience() {
             selectedChoice: null,
             revealed: false,
           }));
-        }, 280);
+        }, stepDelayMs);
         return;
       }
 
@@ -979,7 +1003,10 @@ export function QuizExperience() {
       variationSelections: current.variationSelections,
     }));
     window.setTimeout(() => {
-      document.getElementById("training-course")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      document.getElementById("training-course")?.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "start",
+      });
     }, 80);
   }
 
@@ -996,83 +1023,6 @@ export function QuizExperience() {
             <div className={styles.sectionHeading}>
               <p className={styles.eyebrow}>Knightora</p>
               <h2>Loading your training dashboard…</h2>
-            </div>
-          </section>
-        </main>
-      </div>
-    );
-  }
-
-  if (!isPaidPlan(selectedPlan)) {
-    const paidBlurb = PRICING_PLANS.find((p) => p.id === "paid");
-    return (
-      <div className={styles.pageShell}>
-        <header className={styles.hero}>
-          <nav className={styles.topbar}>
-            <div className={styles.brand}>
-              <span className={styles.brandMark}>K</span>
-              <span className={styles.brandName}>Knightora</span>
-            </div>
-            <div className={styles.topbarLinks}>
-              <Link href="/" className={styles.ghostLink}>
-                Home
-              </Link>
-              <Link href="/pricing" className={styles.ghostLink}>
-                Pricing
-              </Link>
-              <Link href="/quiz" className={styles.ghostLink}>
-                Quiz
-              </Link>
-              <Link href="/analysis" className={styles.ghostLink}>
-                Analysis
-              </Link>
-              {isLoaded && isSignedIn ? (
-                <UserButton />
-              ) : (
-                <Link href="/sign-in" className={styles.ghostLink}>
-                  Sign in
-                </Link>
-              )}
-            </div>
-          </nav>
-        </header>
-        <main>
-          <section className={styles.panel}>
-            <div className={styles.sectionHeading}>
-              <p className={styles.eyebrow}>Subscription required</p>
-              <h2>Unlock the full Knightora experience</h2>
-              <p className={styles.lede}>
-                {paidBlurb?.description ?? "Training, drills, and game analysis are included with an active subscription."}
-              </p>
-            </div>
-            <div className={styles.heroActions}>
-              <button type="button" className={`${styles.button} ${styles.buttonPrimary}`} onClick={() => void startCheckout("month")}>
-                Subscribe — $9.99/mo
-              </button>
-              <button type="button" className={`${styles.button} ${styles.buttonSecondary}`} onClick={() => void startCheckout("year")}>
-                Subscribe — $99.99/yr
-              </button>
-              <Link href="/pricing" className={`${styles.button} ${styles.buttonSecondary}`}>
-                Compare on Pricing
-              </Link>
-            </div>
-            <p className={styles.resultsSummaryMuted}>Annual saves ~17% vs monthly and is best for players training every week.</p>
-            {accountError ? <p className={styles.accountError}>{accountError}</p> : null}
-            <div className={styles.adminUnlockPanel}>
-              <h3>Admin unlock (internal)</h3>
-              <p>Paste an admin code after signing in.</p>
-              <div className={styles.adminUnlockRow}>
-                <input
-                  type="password"
-                  value={adminCodeInput}
-                  onChange={(event) => setAdminCodeInput(event.target.value)}
-                  placeholder="Admin code"
-                />
-                <button type="button" className={`${styles.button} ${styles.buttonSecondary}`} onClick={() => void applyAdminCode()}>
-                  Apply code
-                </button>
-              </div>
-              {adminCodeMessage ? <p className={styles.adminUnlockMessage}>{adminCodeMessage}</p> : null}
             </div>
           </section>
         </main>
@@ -1118,6 +1068,48 @@ export function QuizExperience() {
       </header>
 
       <main>
+        {!isPaidPlan(selectedPlan) ? (
+          <section className={styles.upgradeStrip} aria-label="Upgrade">
+            <div className={styles.upgradeStripInner}>
+              <div>
+                <p className={styles.upgradeStripTitle}>Free plan</p>
+                <p className={styles.upgradeStripCopy}>
+                  Main-line board drills and core lessons are included. Subscribe for every branch, Stockfish on lessons, deeper review, and full game
+                  analysis.
+                </p>
+              </div>
+              <div className={styles.upgradeStripActions}>
+                <button type="button" className={`${styles.button} ${styles.buttonPrimary}`} onClick={() => void startCheckout("month")}>
+                  $9.99/mo
+                </button>
+                <button type="button" className={`${styles.button} ${styles.buttonSecondary}`} onClick={() => void startCheckout("year")}>
+                  $99.99/yr
+                </button>
+                <Link href="/pricing" className={`${styles.button} ${styles.buttonSecondary}`}>
+                  Pricing
+                </Link>
+              </div>
+            </div>
+            {accountError ? <p className={styles.accountError}>{accountError}</p> : null}
+            {isLoaded && isSignedIn ? (
+              <details className={styles.adminUnlockDetails}>
+                <summary>Admin unlock</summary>
+                <div className={styles.adminUnlockRow}>
+                  <input
+                    type="password"
+                    value={adminCodeInput}
+                    onChange={(event) => setAdminCodeInput(event.target.value)}
+                    placeholder="Admin code"
+                  />
+                  <button type="button" className={`${styles.button} ${styles.buttonSecondary}`} onClick={() => void applyAdminCode()}>
+                    Apply
+                  </button>
+                </div>
+                {adminCodeMessage ? <p className={styles.adminUnlockMessage}>{adminCodeMessage}</p> : null}
+              </details>
+            ) : null}
+          </section>
+        ) : null}
         {!activeDashboard || showQuizForm ? (
         <section id="quiz" className={styles.panel}>
           <div className={styles.sectionHeading}>
@@ -1606,25 +1598,25 @@ export function QuizExperience() {
                             <span className={styles.lessonTagMuted}>{activeTrack.opening.name}</span>
                           </div>
                           <h4 className={styles.lessonTitle}>Why this opening?</h4>
-                          <div className={styles.openingIntroBlock}>
-                            <h5>Why this fits your goals</h5>
-                            <p>{activeTrack.intro?.whyThisOpening ?? activeTrack.headline}</p>
-                          </div>
-                          <div className={styles.openingIntroBlock}>
-                            <h5>History and practical track record</h5>
-                            <p>{activeTrack.intro?.history ?? `${activeTrack.opening.name} has remained viable across different eras of chess preparation.`}</p>
-                          </div>
-                          <div className={styles.openingIntroBlock}>
-                            <h5>Why this is viable for your quiz profile</h5>
-                            <p>{activeTrack.intro?.viability}</p>
-                            {recommendationReasons.length ? (
-                              <ul className={styles.openingReasonList}>
-                                {recommendationReasons.map((reason) => (
-                                  <li key={reason}>{reason}</li>
-                                ))}
-                              </ul>
-                            ) : null}
-                          </div>
+                          <p className={styles.introLede}>{activeTrack.intro?.whyThisOpening ?? activeTrack.headline}</p>
+                          <details className={styles.openingIntroDetails}>
+                            <summary>More context</summary>
+                            <div className={styles.openingIntroBlock}>
+                              <h5>History</h5>
+                              <p>{activeTrack.intro?.history ?? `${activeTrack.opening.name} stays viable across eras of prep.`}</p>
+                            </div>
+                            <div className={styles.openingIntroBlock}>
+                              <h5>Your profile</h5>
+                              <p>{activeTrack.intro?.viability}</p>
+                              {recommendationReasons.length ? (
+                                <ul className={styles.openingReasonList}>
+                                  {recommendationReasons.map((reason) => (
+                                    <li key={reason}>{reason}</li>
+                                  ))}
+                                </ul>
+                              ) : null}
+                            </div>
+                          </details>
                           <div className={styles.lessonCompleteActions}>
                             <button type="button" className={`${styles.button} ${styles.buttonPrimary}`} onClick={continueToLinePrimer}>
                               See line options
@@ -1637,38 +1629,29 @@ export function QuizExperience() {
                             <span className={styles.lessonTag}>Line fundamentals</span>
                             <span className={styles.lessonTagMuted}>{activeTrack.opening.name}</span>
                           </div>
-                          <h4 className={styles.lessonTitle}>Understand each variation before choosing</h4>
-                          <p className={styles.lessonPrompt}>
-                            These are the main ways to play this opening. Review the core plan and why each line is viable, then choose what fits your style.
-                          </p>
+                          <h4 className={styles.lessonTitle}>Pick a line style</h4>
+                          <p className={styles.lessonPrompt}>Each card is a different way to play—open one for plans and sample ideas.</p>
                           <div className={styles.variationGrid}>
                             {(activeTrack.variations ?? []).map((variation) => (
-                              <article key={`primer-${variation.id}`} className={styles.variationPrimerCard}>
-                                <p className={styles.statusTitle}>{variation.label}</p>
+                              <details key={`primer-${variation.id}`} className={styles.variationPrimerCard}>
+                                <summary className={styles.variationPrimerSummary}>
+                                  <span className={styles.statusTitle}>{variation.label}</span>
+                                  <span className={styles.variationMetaInline}>
+                                    {variation.style} · {variation.risk} risk
+                                  </span>
+                                </summary>
                                 <p>{variation.summary}</p>
                                 <p className={styles.variationMeta}>
-                                  {variation.style} · {variation.risk} risk · {variation.theoryLoad} theory
+                                  {variation.theoryLoad} theory · {variation.timeControlFit}
                                 </p>
-                                <p className={styles.variationMeta}>
-                                  <strong>Why viable:</strong> {variation.tempo}
-                                </p>
-                                <p className={styles.variationMeta}>
-                                  <strong>Sample line:</strong> {variation.sampleLine}
-                                </p>
-                                <p className={styles.variationMeta}>
-                                  <strong>Time control fit:</strong> {variation.timeControlFit}
-                                </p>
+                                <p className={styles.variationMeta}>{variation.tempo}</p>
+                                <p className={styles.variationMeta}>{variation.sampleLine}</p>
                                 <ul className={styles.openingReasonList}>
                                   {variation.middlegamePlans.slice(0, 2).map((plan) => (
                                     <li key={`${variation.id}-${plan}`}>{plan}</li>
                                   ))}
                                 </ul>
-                                <ul className={styles.openingReasonList}>
-                                  {variation.commonMistakes.slice(0, 2).map((mistake) => (
-                                    <li key={`${variation.id}-mistake-${mistake}`}>Avoid: {mistake}</li>
-                                  ))}
-                                </ul>
-                              </article>
+                              </details>
                             ))}
                           </div>
                           <div className={styles.lessonCompleteActions}>
@@ -1732,7 +1715,7 @@ export function QuizExperience() {
                         </div>
                       ) : trainingUiPhase === "course" && activeLesson ? (
                 <div className={styles.lessonShell}>
-                  <LessonConfettiBurst burstId={lessonCelebrationBurst} active={lessonCelebrationActive} />
+                  <LessonConfettiBurst burstId={lessonCelebrationBurst} active={lessonCelebrationActive && !reduceMotion} />
                   <div className={styles.lessonMeta}>
                     <span className={styles.lessonTag}>{activeTrack.label}</span>
                     <span className={styles.lessonTagMuted}>
@@ -1771,6 +1754,7 @@ export function QuizExperience() {
                   {getBoardInteractionSpec(activeLesson, trainingSession.lineStepIndex) ? (
                     <>
                       <BoardLessonView
+                        key={`${activeLesson.id}-${trainingSession.lineStepIndex}-${getBoardInteractionSpec(activeLesson, trainingSession.lineStepIndex)?.targetSquare ?? ""}`}
                         boardSpec={getBoardInteractionSpec(activeLesson, trainingSession.lineStepIndex)!}
                         selectedSquare={trainingSession.selectedChoice}
                         revealed={trainingSession.revealed}
@@ -2120,11 +2104,6 @@ function BoardLessonView({
   }, []);
 
   const boardInstanceKey = `${boardSpec.fen ?? "nofen"}|${boardSpec.targetSquare}|${boardSpec.sourceSquare ?? ""}|${boardSpec.pieces.length}`;
-
-  useEffect(() => {
-    setConfirmedSource(null);
-    setDragSource(null);
-  }, [boardInstanceKey]);
 
   const effectiveSource = boardSpec.sourceSquare ?? confirmedSource;
   const legalDests = useMemo(() => {

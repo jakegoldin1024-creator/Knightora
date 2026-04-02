@@ -15,10 +15,10 @@ export async function POST(request: NextRequest) {
       throw new Error("That plan does not require checkout.");
     }
 
-    const { userId } = await auth();
+    const { userId: clerkUserId } = await auth();
     let account = null as Awaited<ReturnType<typeof resolveClerkKnightoraAccount>>;
 
-    if (userId) {
+    if (clerkUserId) {
       account = await resolveClerkKnightoraAccount();
     } else {
       const cookieStore = await cookies();
@@ -46,11 +46,13 @@ export async function POST(request: NextRequest) {
       metadata: {
         userId: account.user.id,
         plan,
+        ...(clerkUserId ? { clerkUserId } : {}),
       },
       subscription_data: {
         metadata: {
           userId: account.user.id,
           plan,
+          ...(clerkUserId ? { clerkUserId } : {}),
         },
       },
     });

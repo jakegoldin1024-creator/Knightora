@@ -699,7 +699,7 @@ function buildTieredLineLessons(openingKey: string): TrainingLesson[] {
         "Full line",
         main,
         `You walked through ${main.length} plies of a principled main line. This is how Knightora builds real repertoire memory: move order, not just slogan-level ideas.`,
-        "paid",
+        "free",
         mainHints,
         "main",
       ),
@@ -777,6 +777,7 @@ function buildProgressiveLineCheckpoints(openingKey: string): TrainingLesson[] {
     for (const plies of checkpoints) {
       const sliced = moves.slice(0, plies);
       const tierHint = sequence.key === "main" ? "Mainline recall" : `${sequence.title} recall`;
+      const freeMainEntry = sequence.key === "main" && plies === checkpoints[0];
       lessons.push(
         lineLessonFromMoves(
           `${openingKey}-checkpoint-${sequence.key}-${plies}`,
@@ -785,7 +786,7 @@ function buildProgressiveLineCheckpoints(openingKey: string): TrainingLesson[] {
           "Move-order retention",
           sliced,
           `Checkpoint drill: replay the first ${plies} plies from the ${sequence.title.toLowerCase()} without hesitation so the move order survives practical time pressure.`,
-          "paid",
+          freeMainEntry ? "free" : "paid",
           sliced.map((san, idx) => `${tierHint}: ${buildHintFromSan(san, idx)}`),
           sequence.key === "main"
             ? "main"
@@ -812,7 +813,7 @@ function buildDeviationLessons(openingKey: string): TrainingLesson[] {
       "Practical responses",
       branch.moves,
       "You ran the right move order for this sideline. Over the board, pair it with the plan below so you are not guessing after the fork in the road.",
-      undefined,
+      "paid",
       branch.hints ?? buildDeviationStepHints(branch.title, branch.plan, branch.moves),
       "deviation",
     );
@@ -862,6 +863,7 @@ export function getTrainingTrack(openingKey: string): TrainingTrack {
       ...buildDeviationLessons(openingKey),
       ...baseTrack.lessons.map((lesson) => ({
         ...lesson,
+        minPlan: "free" as const,
         chapter: lesson.chapter ?? (lesson.title.toLowerCase().includes("deviation") ? "Opponent deviations" : "Core concepts"),
       })),
       {
@@ -873,6 +875,7 @@ export function getTrainingTrack(openingKey: string): TrainingTrack {
         choices: [baseTrack.modules[0], "Random traps", "Engine-only memorization"],
         answer: baseTrack.modules[0],
         explanation: `Knightora keeps ${openingKey} practical by prioritizing ${baseTrack.modules[0].toLowerCase()} first.`,
+        minPlan: "free" as const,
       },
       {
         id: `${openingKey}-review-2`,
@@ -883,6 +886,7 @@ export function getTrainingTrack(openingKey: string): TrainingTrack {
         choices: ["Clear recurring plans", "Maximum theory at once", "Learning every transposition first"],
         answer: "Clear recurring plans",
         explanation: "A playable repertoire is built on repeatable structures and plans, not on trying to memorize everything at once.",
+        minPlan: "free" as const,
       },
       ...buildExtendedReviewLessons(openingKey, baseTrack.modules),
       ...buildEndgameMicroLessons(openingKey),
@@ -895,10 +899,9 @@ function buildTrackIntro(openingKey: string, modules: string[]): TrainingTrackIn
   const moduleA = modules[0] ?? "Core setup";
   const moduleB = modules[1] ?? "Typical plans";
   return {
-    whyThisOpening: `${openingLabel} rewards players who want a repeatable structure they can trust under time pressure. It gives you clear early priorities in ${moduleA.toLowerCase()} and a practical transition into ${moduleB.toLowerCase()}.`,
-    history: `${openingLabel} has held up across classical tournament play, modern online practice, and engine-era preparation. The ideas evolved, but the core structure stayed viable because it leads to playable middlegames rather than one-move tricks.`,
-    viability:
-      "Based on your quiz profile, this path is practical when you prefer positions with recurring plans, reliable development patterns, and clear decision points you can revisit after each game.",
+    whyThisOpening: `${openingLabel}: a clear ${moduleA.toLowerCase()} → ${moduleB.toLowerCase()} story you can replay in games.`,
+    history: `${openingLabel} has stayed sound from classical play through online and engine prep—ideas update, the structures stay practical.`,
+    viability: "Your quiz answers point here when you want repeatable plans and clean development more than one-off tricks.",
   };
 }
 
@@ -1027,7 +1030,7 @@ function buildEndgameMicroLessons(openingKey: string): TrainingLesson[] {
       answer: "Create a passed pawn with a supported break",
       explanation: "A supported break that creates a passer gives your rook and king a clear target and practical winning plan.",
     },
-  ];
+  ].map((lesson) => ({ ...lesson, minPlan: "paid" as const }));
 }
 
 function buildExtendedReviewLessons(openingKey: string, modules: string[]): TrainingLesson[] {
@@ -1136,7 +1139,7 @@ function buildExtendedReviewLessons(openingKey: string, modules: string[]): Trai
       answer: "Fewer early-game blunders",
       explanation: "Performance gains in your first 10-15 moves are the strongest practical signal.",
     },
-  ];
+  ].map((lesson) => ({ ...lesson, minPlan: "paid" as const }));
 }
 
 function validateTrainingTrack(openingKey: string, track: TrainingTrack): string[] {

@@ -5,6 +5,7 @@ import { getSessionCookieName, updateSubscription, updateSubscriptionForClerk } 
 import type { SubscriptionPlan } from "@/lib/subscription";
 import { isBillablePlan } from "@/lib/billing";
 import { resolveClerkKnightoraAccount } from "@/lib/clerk-account";
+import { syncClerkPublicSubscriptionPlan } from "@/lib/clerk-subscription-sync";
 
 export async function PUT(request: NextRequest) {
   try {
@@ -35,6 +36,11 @@ export async function PUT(request: NextRequest) {
       // Ensure a Knightora user row exists for this Clerk account before plan updates.
       await resolveClerkKnightoraAccount();
       const user = await updateSubscriptionForClerk(userId, requestedPlan);
+      try {
+        await syncClerkPublicSubscriptionPlan(userId, requestedPlan);
+      } catch {
+        // Clerk sync is best-effort; file DB still updated above.
+      }
       return NextResponse.json({ user }, { status: 200 });
     }
 

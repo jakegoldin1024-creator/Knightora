@@ -1089,6 +1089,109 @@
   font-size: 0.92rem;
 }
 
+.upgradeStrip {
+  margin-bottom: 28px;
+  padding: 18px 20px;
+  border-radius: 20px;
+  border: 1px solid rgba(143, 59, 46, 0.22);
+  background: linear-gradient(135deg, rgba(255, 252, 248, 0.96), rgba(255, 255, 255, 0.88));
+  box-shadow: var(--shadow);
+}
+
+.upgradeStripInner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.upgradeStripTitle {
+  margin: 0 0 4px;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 800;
+  color: var(--brand);
+}
+
+.upgradeStripCopy {
+  margin: 0;
+  max-width: 52ch;
+  color: var(--muted);
+  line-height: 1.55;
+  font-size: 0.95rem;
+}
+
+.upgradeStripActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.adminUnlockDetails {
+  margin-top: 14px;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.adminUnlockDetails summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.introLede {
+  margin: 0 0 14px;
+  font-size: 1.05rem;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.openingIntroDetails {
+  margin-bottom: 16px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.openingIntroDetails summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.variationPrimerSummary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 0;
+}
+
+.variationPrimerSummary::-webkit-details-marker {
+  display: none;
+}
+
+.variationMetaInline {
+  font-size: 0.82rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lessonConfettiLayer {
+    display: none !important;
+  }
+
+  .ghostLink,
+  .button {
+    transition: none;
+  }
+}
+
 .adminUnlockPanel {
   margin-top: 18px;
   padding: 16px 18px;

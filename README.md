@@ -89,7 +89,7 @@ npm run stripe:listen
 
 5. Copy the **`whsec_...`** secret printed by the CLI into `STRIPE_WEBHOOK_SECRET` in `.env.local`.
 
-6. End-to-end check: sign in (Clerk), open the quiz paywall, start checkout, pay with a [test card](https://docs.stripe.com/testing). After redirect to `/quiz`, your account should show **paid** (webhook updates the plan). Cancel the subscription in the Stripe Dashboard to confirm downgrade to **free**.
+6. End-to-end check: sign in (Clerk), use the **Subscribe** buttons on `/quiz` (upgrade strip if you are on the free tier), pay with a [test card](https://docs.stripe.com/testing). After redirect to `/quiz`, refresh—your plan should show **paid**. The webhook writes **`subscriptionPlan`** to **Clerk `publicMetadata`** (see [`lib/clerk-subscription-sync.ts`](lib/clerk-subscription-sync.ts)) so entitlements work on **Vercel** even when `data/app-db.json` cannot be updated reliably. Cancel the subscription in the Stripe Dashboard to confirm downgrade to **free**.
 
 **Production (e.g. Vercel):** add the same variables in project settings. Create a **Webhook endpoint** URL `https://<your-domain>/api/billing/webhook` and subscribe to:
 
