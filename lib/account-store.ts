@@ -266,6 +266,12 @@ export async function updateSubscriptionByUserId(userId: string, subscriptionPla
   return publicUser(user);
 }
 
+/** Used by Stripe webhooks when `clerkUserId` is missing from subscription metadata (older checkouts). */
+export async function getClerkIdForKnightoraUserId(knightoraUserId: string): Promise<string | undefined> {
+  const db = await readDb();
+  return db.users.find((entry) => entry.id === knightoraUserId)?.clerkId;
+}
+
 export function getSessionCookieName() {
   return SESSION_COOKIE;
 }

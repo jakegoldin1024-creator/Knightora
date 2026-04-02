@@ -1,6 +1,6 @@
 "use client";
 
-import { UserButton, useAuth, useClerk } from "@clerk/nextjs";
+import { UserButton, useAuth, useClerk, useSession } from "@clerk/nextjs";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type FormEvent } from "react";
 import { filterLessonsForPlan, getTrainingTrack, type TrainingLesson, type TrainingVariation } from "@/data/training";
@@ -151,6 +151,7 @@ const initialTrainingProgress: TrainingProgress = {
 export function QuizExperience() {
   const { isLoaded, isSignedIn, userId } = useAuth();
   const { signOut } = useClerk();
+  const { session } = useSession();
 
   const [profile, setProfile] = useState<QuizProfile>(initialProfile);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
@@ -516,6 +517,46 @@ export function QuizExperience() {
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
   }, []);
+
+  /** After Stripe redirects back, refresh Clerk session + account (webhook may need a second or two). */
+  useEffect(() => {
+    if (!hydrated) return;
+    const params = new URLSearchParams(window.location.search);
+    const billing = params.get("billing");
+    if (!billing) return;
+
+    const refreshAccount = async () => {
+      try {
+        await session?.reload();
+      } catch {
+        // non-blocking
+      }
+      try {
+        const response = await fetch("/api/account/me");
+        const payload = (await response.json()) as { user: AccountUser | null; dashboard: SavedDashboard | null };
+        if (payload.user) {
+          setAccountUser(payload.user);
+          setGuestSubscriptionPlan(payload.user.subscriptionPlan);
+          if (payload.dashboard) {
+            setSavedDashboard(payload.dashboard);
+            setProfile(payload.dashboard.profile);
+          }
+        }
+      } catch {
+        setAccountError("Could not refresh account after checkout. Reload the page.");
+      }
+    };
+
+    if (billing === "success") {
+      setAccountError(null);
+      void refreshAccount();
+      window.setTimeout(() => void refreshAccount(), 2800);
+      window.setTimeout(() => void refreshAccount(), 8000);
+    } else if (billing === "cancel") {
+      setAccountError("Checkout was canceled.");
+    }
+    window.history.replaceState({}, "", window.location.pathname);
+  }, [hydrated, session]);
 
   async function loadAccount() {
     try {

@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getPlanForPriceId, getStripeClient } from "@/lib/billing";
-import { updateSubscriptionByUserId } from "@/lib/account-store";
+import { getClerkIdForKnightoraUserId, updateSubscriptionByUserId } from "@/lib/account-store";
 import { syncClerkPublicSubscriptionPlan } from "@/lib/clerk-subscription-sync";
 import type { SubscriptionPlan } from "@/lib/subscription";
 
@@ -20,12 +20,17 @@ async function applySubscriptionPlan(knightoraUserId: string, clerkUserId: strin
   } catch {
     // app-db.json may be read-only on serverless hosts; Clerk metadata is the source of truth there.
   }
-  if (clerkUserId) {
+  const clerkKey = clerkUserId ?? (await getClerkIdForKnightoraUserId(knightoraUserId));
+  if (clerkKey) {
     try {
-      await syncClerkPublicSubscriptionPlan(clerkUserId, plan);
+      await syncClerkPublicSubscriptionPlan(clerkKey, plan);
     } catch (error) {
       console.error("Clerk subscription metadata sync failed", error);
     }
+  } else {
+    console.error("Stripe webhook: no clerkUserId for Knightora user; cannot sync Clerk metadata.", {
+      knightoraUserId,
+    });
   }
 }
 

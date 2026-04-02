@@ -100,6 +100,14 @@ npm run stripe:listen
 
 Paste that endpoint’s **signing secret** into `STRIPE_WEBHOOK_SECRET` for production (separate from the CLI secret used locally).
 
+### If billing still fails
+
+1. **Vercel env:** `STRIPE_SECRET_KEY`, `STRIPE_PRICE_PAID_MONTHLY`, `STRIPE_PRICE_PAID_YEARLY`, and **`STRIPE_WEBHOOK_SECRET` must all be set** on the project. Redeploy after changing env vars.
+2. **Webhook URL:** Must be exactly `https://<your-production-domain>/api/billing/webhook` (same domain users use). The signing secret must come from **that** endpoint in the Stripe Dashboard—not from `stripe listen` (that `whsec_` is only for localhost).
+3. **Test vs live:** Stripe **Test mode** keys and **Live mode** keys must match the mode of the prices you created (`price_...`). Mixing test secret with live prices (or the reverse) breaks checkout.
+4. **Clerk:** `CLERK_SECRET_KEY` on the server must be valid so the webhook can set `publicMetadata.subscriptionPlan`. In Clerk Dashboard, ensure your app allows updating user metadata from the Backend API (default setups work).
+5. **Stripe Dashboard → Developers → Webhooks → your endpoint → recent deliveries:** open a failed delivery to read the response body (e.g. missing secret, 500 from Clerk).
+
 ## Deploying beyond localhost (Knightora.ai)
 
 Recommended: deploy with Vercel + connect `Knightora.ai`.
