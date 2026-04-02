@@ -7,14 +7,21 @@ type StockfishEngine = {
 export async function createStockfishEngine(): Promise<StockfishEngine> {
   // Create a Worker that loads Stockfish from a CDN at runtime.
   // This avoids bundler issues with WASM worker assets in Next/Turbopack.
+  const base = "https://cdn.jsdelivr.net/npm/stockfish@18.0.5/";
   const workerCode = `
     self.onmessage = self.onmessage || null;
-    importScripts("https://cdn.jsdelivr.net/npm/stockfish@18.0.5/stockfish.js");
+    self.Module = {
+      locateFile: function(path) {
+        return "${base}" + path;
+      }
+    };
+    importScripts("${base}stockfish.js");
   `;
   const blob = new Blob([workerCode], { type: "application/javascript" });
   const url = URL.createObjectURL(blob);
   const worker = new Worker(url);
-  URL.revokeObjectURL(url);
+  // Keep URL alive until worker has loaded its script.
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
   return worker as unknown as StockfishEngine;
 }
 
@@ -38,6 +45,7 @@ export async function analyzeFenWithStockfish(input: {
   let best: StockfishEval | null = null;
   let bestDepth = 0;
   const multiPv = Math.max(1, Math.min(3, input.multiPv ?? 1));
+  let workerError: Error | null = null;
 
   const cleanup = () => {
     try {
@@ -59,6 +67,10 @@ export async function analyzeFenWithStockfish(input: {
     }
     input.signal.addEventListener("abort", cleanup, { once: true });
   }
+  const onWorkerError = (event: ErrorEvent) => {
+    workerError = new Error(event.message || "Stockfish worker failed to start.");
+  };
+  (engine as unknown as Worker).addEventListener?.("error", onWorkerError);
 
   let seenUciOk = false;
   let seenReadyOk = false;
@@ -94,32 +106,45 @@ export async function analyzeFenWithStockfish(input: {
     }
   };
 
-  engine.postMessage("uci");
-  const startedHandshake = Date.now();
-  while (!input.signal?.aborted && !seenUciOk && Date.now() - startedHandshake < 4000) {
-    await new Promise((r) => setTimeout(r, 40));
-  }
-  engine.postMessage("isready");
-  const startedReady = Date.now();
-  while (!input.signal?.aborted && !seenReadyOk && Date.now() - startedReady < 4000) {
-    await new Promise((r) => setTimeout(r, 40));
-  }
-  engine.postMessage(`setoption name MultiPV value ${multiPv}`);
-  engine.postMessage("ucinewgame");
-  engine.postMessage(`position fen ${input.fen}`);
-  engine.postMessage(`go depth ${Math.max(6, Math.min(22, input.depth))}`);
+  try {
+    engine.postMessage("uci");
+    const startedHandshake = Date.now();
+    while (!input.signal?.aborted && !seenUciOk && Date.now() - startedHandshake < 4000) {
+      if (workerError) throw workerError;
+      await new Promise((r) => setTimeout(r, 40));
+    }
+    if (!seenUciOk) {
+      throw new Error("Stockfish engine did not initialize (uciok timeout).");
+    }
+    engine.postMessage("isready");
+    const startedReady = Date.now();
+    while (!input.signal?.aborted && !seenReadyOk && Date.now() - startedReady < 4000) {
+      if (workerError) throw workerError;
+      await new Promise((r) => setTimeout(r, 40));
+    }
+    if (!seenReadyOk) {
+      throw new Error("Stockfish engine did not become ready (readyok timeout).");
+    }
+    engine.postMessage(`setoption name MultiPV value ${multiPv}`);
+    engine.postMessage("ucinewgame");
+    engine.postMessage(`position fen ${input.fen}`);
+    engine.postMessage(`go depth ${Math.max(6, Math.min(22, input.depth))}`);
 
-  // Wait for best/finish. We treat reaching the requested depth as "done enough".
-  const targetDepth = Math.max(6, Math.min(22, input.depth));
-  const started = Date.now();
+    // Wait for best/finish. We treat reaching the requested depth as "done enough".
+    const targetDepth = Math.max(6, Math.min(22, input.depth));
+    const started = Date.now();
 
-  while (!input.signal?.aborted) {
-    if (bestDepth >= targetDepth) break;
-    if (Date.now() - started > 12_000) break;
-    await new Promise((r) => setTimeout(r, 120));
+    while (!input.signal?.aborted) {
+      if (workerError) throw workerError;
+      if (bestDepth >= targetDepth) break;
+      if (Date.now() - started > 12_000) break;
+      await new Promise((r) => setTimeout(r, 120));
+    }
+
+    return best;
+  } finally {
+    (engine as unknown as Worker).removeEventListener?.("error", onWorkerError);
+    cleanup();
   }
-
-  cleanup();
-  return best;
 }
 

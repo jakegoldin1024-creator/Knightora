@@ -9,8 +9,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <ClerkProvider
           signInUrl="/sign-in"
           signUpUrl="/sign-up"
-          signInFallbackRedirectUrl="/"
-          signUpFallbackRedirectUrl="/"
+          signInFallbackRedirectUrl="/quiz"
+          signUpFallbackRedirectUrl="/quiz"
         >
           {children}
         </ClerkProvider>

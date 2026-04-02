@@ -19,54 +19,55 @@
         },
         "repertoire": {
           "white": {
-            "name": "Italian Game",
-            "key": "italian",
+            "name": "Queen's Gambit",
+            "key": "qg",
             "tags": [
-              "open",
-              "initiative",
+              "closed",
+              "clarity",
               "medium",
-              "balanced",
-              "rapid",
-              "beginner"
+              "solid",
+              "classical",
+              "advanced"
             ],
-            "summary": "Active piece play and fast development without the workload of the sharpest theory.",
-            "why": "A flexible opening that teaches core attacking ideas while still being practical for most improving players.",
+            "summary": "Strategic pressure with long-term structure and central control.",
+            "why": "Great for players who enjoy strategic buildup and want an opening with a long shelf life.",
             "study": [
-              "Learn the main setup: c3, d3, Re1.",
-              "Focus on piece activity over memorizing sidelines.",
-              "Study 3 attacking model games."
+              "Understand the isolated queen pawn structures.",
+              "Study minority attack themes.",
+              "Review model games from classical play."
             ],
-            "score": 9,
-            "confidence": 88,
+            "score": 15,
+            "confidence": 95,
             "evidence": [
-              "Lines up with your risk preference: balanced.",
-              "Recent games suggest you naturally reach open positions."
+              "Matches your stated goal: clear, repeatable plans.",
+              "Your recent Chess.com games already show nearby opening patterns.",
+              "Recent games suggest you naturally reach closed positions."
             ]
           },
           "blackE4": {
-            "name": "Sicilian Defense",
-            "key": "sicilian",
+            "name": "Scandinavian Defense",
+            "key": "scandinavian",
             "tags": [
               "open",
-              "counterplay",
-              "high",
-              "sharp",
+              "clarity",
+              "low",
+              "balanced",
               "bullet",
-              "advanced"
+              "beginner"
             ],
-            "summary": "Dynamic imbalance and winning chances if you are happy learning sharper theory.",
-            "why": "Best for players who want active counterplay and are comfortable with more theoretical upkeep.",
+            "summary": "Simple development and direct plans, especially useful if you value quick practical positions.",
+            "why": "It limits study burden and gets you playing recognizable structures fast.",
             "study": [
-              "Choose one branch first, like the Najdorf or Accelerated Dragon.",
-              "Study anti-Sicilian responses.",
-              "Focus on recurring tactical patterns."
+              "Learn one queen retreat setup.",
+              "Practice development speed.",
+              "Study common traps after 1.e4 d5 2.exd5 Qxd5."
             ],
-            "score": 16,
-            "confidence": 88,
+            "score": 14,
+            "confidence": 95,
             "evidence": [
-              "Fits your theory tolerance: high.",
-              "Your recent Chess.com games already show nearby opening patterns.",
-              "Recent games suggest you naturally reach open positions."
+              "Matches your stated goal: clear, repeatable plans.",
+              "Lines up with your risk preference: balanced.",
+              "Your recent Chess.com games already show nearby opening patterns."
             ]
           },
           "blackD4": {
@@ -87,8 +88,8 @@
               "Understand doubled pawns versus bishop pair tradeoffs.",
               "Review central tension plans."
             ],
-            "score": 16,
-            "confidence": 88,
+            "score": 18,
+            "confidence": 74,
             "evidence": [
               "Matches your stated goal: clear, repeatable plans.",
               "Fits your theory tolerance: high.",
@@ -98,233 +99,211 @@
         },
         "insights": {
           "username": "pandachess1024",
-          "gamesAnalyzed": 600,
+          "gamesAnalyzed": 120,
           "archivesChecked": 12,
-          "detectedTimeControl": "bullet",
+          "detectedTimeControl": "rapid",
           "styleHints": {
-            "positionType": "open",
-            "risk": "sharp",
+            "positionType": "closed",
+            "risk": "solid",
             "theory": "high",
-            "goal": "initiative"
+            "goal": "counterplay"
           },
           "openingBoosts": {
-            "scandinavian": 2,
-            "french": 1,
-            "sicilian": 3,
-            "kid": 1
+            "qg": 3,
+            "scandinavian": 4,
+            "slav": 3
           },
           "whiteTopOpenings": [
             {
-              "opening": "Sicilian Defense",
-              "games": 29,
+              "opening": "Queen's Gambit",
+              "games": 26,
               "wins": 16,
               "draws": 2,
-              "losses": 11,
-              "scoreRate": 0.5862068965517241,
-              "weightedScore": 0.5714285714285714,
-              "averageOpponentRating": 1071
+              "losses": 8,
+              "scoreRate": 0.6538461538461539,
+              "weightedScore": 0.625,
+              "averageOpponentRating": 1660
             },
             {
-              "opening": "Scandinavian Defense",
-              "games": 28,
-              "wins": 13,
+              "opening": "Slav Defense",
+              "games": 7,
+              "wins": 5,
               "draws": 0,
-              "losses": 15,
-              "scoreRate": 0.4642857142857143,
-              "weightedScore": 0.47058823529411764,
-              "averageOpponentRating": 1079
+              "losses": 2,
+              "scoreRate": 0.7142857142857143,
+              "weightedScore": 0.6153846153846154,
+              "averageOpponentRating": 1642
             },
             {
-              "opening": "Scotch Game",
-              "games": 25,
-              "wins": 12,
+              "opening": "Modern Defense",
+              "games": 4,
+              "wins": 1,
               "draws": 0,
-              "losses": 13,
-              "scoreRate": 0.48,
-              "weightedScore": 0.4838709677419355,
-              "averageOpponentRating": 1136
+              "losses": 3,
+              "scoreRate": 0.25,
+              "weightedScore": 0.4,
+              "averageOpponentRating": 1630
             }
           ],
           "blackVsE4TopDefenses": [
             {
-              "opening": "Sicilian Defense",
-              "games": 67,
-              "wins": 26,
-              "draws": 4,
-              "losses": 37,
-              "scoreRate": 0.417910447761194,
-              "weightedScore": 0.4246575342465753,
-              "averageOpponentRating": 1109
-            },
-            {
               "opening": "Scandinavian Defense",
-              "games": 40,
-              "wins": 23,
+              "games": 29,
+              "wins": 14,
               "draws": 2,
-              "losses": 15,
-              "scoreRate": 0.6,
-              "weightedScore": 0.5869565217391305,
-              "averageOpponentRating": 1073
-            },
-            {
-              "opening": "French Defense",
-              "games": 27,
-              "wins": 12,
-              "draws": 0,
-              "losses": 15,
-              "scoreRate": 0.4444444444444444,
-              "weightedScore": 0.45454545454545453,
-              "averageOpponentRating": 1206
+              "losses": 13,
+              "scoreRate": 0.5172413793103449,
+              "weightedScore": 0.5142857142857142,
+              "averageOpponentRating": 1650
             }
           ],
           "blackVsD4TopDefenses": [
             {
-              "opening": "King's Indian Defense",
-              "games": 11,
+              "opening": "Slav Defense",
+              "games": 10,
               "wins": 4,
               "draws": 0,
-              "losses": 7,
-              "scoreRate": 0.36363636363636365,
-              "weightedScore": 0.4117647058823529,
-              "averageOpponentRating": 1164
+              "losses": 6,
+              "scoreRate": 0.4,
+              "weightedScore": 0.4375,
+              "averageOpponentRating": 1675
             },
             {
               "opening": "London System",
-              "games": 8,
-              "wins": 4,
-              "draws": 1,
-              "losses": 3,
-              "scoreRate": 0.5625,
-              "weightedScore": 0.5357142857142857,
-              "averageOpponentRating": 1079
+              "games": 3,
+              "wins": 1,
+              "draws": 0,
+              "losses": 2,
+              "scoreRate": 0.3333333333333333,
+              "weightedScore": 0.4444444444444444,
+              "averageOpponentRating": 1658
             },
             {
-              "opening": "Dutch Defense",
-              "games": 7,
-              "wins": 3,
-              "draws": 1,
-              "losses": 3,
-              "scoreRate": 0.5,
-              "weightedScore": 0.5,
-              "averageOpponentRating": 1085
+              "opening": "Birds Opening Dutch Variation 2.Nf3 Nf6 3.e3",
+              "games": 2,
+              "wins": 2,
+              "draws": 0,
+              "losses": 0,
+              "scoreRate": 1,
+              "weightedScore": 0.625,
+              "averageOpponentRating": 1658
             }
           ],
           "whiteBestScoring": [
             {
-              "opening": "Caro Kann Defense Main Line 4...Nf6",
-              "games": 5,
-              "wins": 5,
-              "draws": 0,
-              "losses": 0,
-              "scoreRate": 1,
-              "weightedScore": 0.7272727272727273,
-              "averageOpponentRating": 1104
-            },
-            {
-              "opening": "Kings Pawn Opening Kings Knight Variation",
-              "games": 6,
-              "wins": 5,
-              "draws": 0,
-              "losses": 1,
-              "scoreRate": 0.8333333333333334,
-              "weightedScore": 0.6666666666666666,
-              "averageOpponentRating": 947
-            },
-            {
-              "opening": "Kings Pawn Opening",
-              "games": 6,
-              "wins": 5,
-              "draws": 0,
-              "losses": 1,
-              "scoreRate": 0.8333333333333334,
-              "weightedScore": 0.6666666666666666,
-              "averageOpponentRating": 1056
-            }
-          ],
-          "blackVsE4BestScoring": [
-            {
-              "opening": "Caro Kann Defense 2.Nf3 d5",
+              "opening": "King's Indian Defense",
               "games": 3,
               "wins": 3,
               "draws": 0,
               "losses": 0,
               "scoreRate": 1,
               "weightedScore": 0.6666666666666666,
-              "averageOpponentRating": 1093
+              "averageOpponentRating": 1677
             },
             {
-              "opening": "Caro Kann Defense Advance Botvinnik Carls Defense 4.c3 Nc6",
-              "games": 4,
-              "wins": 3,
-              "draws": 0,
-              "losses": 1,
-              "scoreRate": 0.75,
-              "weightedScore": 0.6,
-              "averageOpponentRating": 1008
+              "opening": "Queen's Gambit",
+              "games": 26,
+              "wins": 16,
+              "draws": 2,
+              "losses": 8,
+              "scoreRate": 0.6538461538461539,
+              "weightedScore": 0.625,
+              "averageOpponentRating": 1660
             },
+            {
+              "opening": "Slav Defense",
+              "games": 7,
+              "wins": 5,
+              "draws": 0,
+              "losses": 2,
+              "scoreRate": 0.7142857142857143,
+              "weightedScore": 0.6153846153846154,
+              "averageOpponentRating": 1642
+            }
+          ],
+          "blackVsE4BestScoring": [
             {
               "opening": "Scandinavian Defense",
-              "games": 40,
-              "wins": 23,
+              "games": 29,
+              "wins": 14,
               "draws": 2,
-              "losses": 15,
-              "scoreRate": 0.6,
-              "weightedScore": 0.5869565217391305,
-              "averageOpponentRating": 1073
+              "losses": 13,
+              "scoreRate": 0.5172413793103449,
+              "weightedScore": 0.5142857142857142,
+              "averageOpponentRating": 1650
             }
           ],
           "blackVsD4BestScoring": [
             {
               "opening": "London System",
-              "games": 8,
-              "wins": 4,
-              "draws": 1,
-              "losses": 3,
-              "scoreRate": 0.5625,
-              "weightedScore": 0.5357142857142857,
-              "averageOpponentRating": 1079
-            },
-            {
-              "opening": "Dutch Defense",
-              "games": 7,
-              "wins": 3,
-              "draws": 1,
-              "losses": 3,
-              "scoreRate": 0.5,
-              "weightedScore": 0.5,
-              "averageOpponentRating": 1085
-            },
-            {
-              "opening": "Reti Opening",
-              "games": 4,
-              "wins": 2,
+              "games": 3,
+              "wins": 1,
               "draws": 0,
               "losses": 2,
-              "scoreRate": 0.5,
-              "weightedScore": 0.5,
-              "averageOpponentRating": 1348
+              "scoreRate": 0.3333333333333333,
+              "weightedScore": 0.4444444444444444,
+              "averageOpponentRating": 1658
+            },
+            {
+              "opening": "Slav Defense",
+              "games": 10,
+              "wins": 4,
+              "draws": 0,
+              "losses": 6,
+              "scoreRate": 0.4,
+              "weightedScore": 0.4375,
+              "averageOpponentRating": 1675
             }
           ],
           "recommendationReasons": {
-            "white": "You play Sicilian Defense most, but your best recent results come from Caro Kann Defense Main Line 4...Nf6.",
-            "blackE4": "You play Sicilian Defense most, but your best recent results come from Caro Kann Defense 2.Nf3 d5.",
-            "blackD4": "You play King's Indian Defense most, but your best recent results come from London System."
+            "white": "You play Queen's Gambit most, but your best recent results come from King's Indian Defense.",
+            "blackE4": "Scandinavian Defense is both familiar and productive in your recent games.",
+            "blackD4": "You play Slav Defense most, but your best recent results come from London System."
           },
           "summary": [
-            "Analyzed 600 recent public games across 12 Chess.com archive months.",
-            "Detected time control preference: bullet.",
-            "White: most used is Sicilian Defense (29 games), but best scoring is Caro Kann Defense Main Line 4...Nf6 (100% score rate).",
-            "Black vs 1.e4: most used is Sicilian Defense (67 games), but best scoring is Caro Kann Defense 2.Nf3 d5 (100% score rate).",
-            "Black vs 1.d4: most used is King's Indian Defense (11 games), but best scoring is London System (56% score rate)."
+            "Analyzed 120 recent public games across 12 Chess.com archive months.",
+            "Detected time control preference: rapid.",
+            "White: most used is Queen's Gambit (26 games), but best scoring is King's Indian Defense (100% score rate).",
+            "Black vs 1.e4: strongest recent signal is Scandinavian Defense (29 games, 52% score rate).",
+            "Black vs 1.d4: most used is Slav Defense (10 games), but best scoring is London System (33% score rate)."
           ]
         },
-        "savedAt": "2026-03-27T14:02:39.280Z",
+        "savedAt": "2026-03-30T13:20:37.351Z",
         "trainingProgress": {
-          "completedLessons": [],
-          "xp": 0,
-          "streak": 0,
-          "lastTrainingDate": null,
-          "lessonStats": {}
+          "completedLessons": [
+            "scandinavian-main-line",
+            "qg-main-line",
+            "qg-line-starter"
+          ],
+          "xp": 36,
+          "streak": 2,
+          "lastTrainingDate": "2026-03-28",
+          "lessonStats": {
+            "scandinavian-main-line": {
+              "attempts": 1,
+              "correct": 1,
+              "streak": 1,
+              "lastReviewed": "2026-03-27",
+              "dueAt": "2026-03-28",
+              "ease": 1.15
+            },
+            "qg-main-line": {
+              "attempts": 1,
+              "correct": 1,
+              "streak": 1,
+              "lastReviewed": "2026-03-28",
+              "dueAt": "2026-03-29",
+              "ease": 1.15
+            },
+            "qg-line-starter": {
+              "attempts": 1,
+              "correct": 1,
+              "streak": 1,
+              "lastReviewed": "2026-03-28",
+              "dueAt": "2026-03-29",
+              "ease": 1.15
+            }
+          }
         }
       },
       "createdAt": "2026-03-20T19:48:57.815Z",

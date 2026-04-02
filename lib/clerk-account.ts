@@ -3,7 +3,14 @@ import { syncClerkAccount } from "@/lib/account-store";
 
 /** Loads Clerk session and syncs/creates the matching Knightora user row. */
 export async function resolveClerkKnightoraAccount() {
-  const { userId } = await auth();
+  let userId: string | null = null;
+  try {
+    ({ userId } = await auth());
+  } catch {
+    // Some API routes intentionally skip Clerk middleware matching.
+    // In that case, treat Clerk auth as unavailable and fall back to app-session auth.
+    return null;
+  }
   if (!userId) return null;
 
   const clerkUser = await currentUser();

@@ -4,6 +4,10 @@ import Stripe from "stripe";
 import { getPlanForPriceId, getStripeClient } from "@/lib/billing";
 import { updateSubscriptionByUserId } from "@/lib/account-store";
 
+/**
+ * Stripe must send: checkout.session.completed, customer.subscription.created|updated|deleted.
+ * Local dev: `npm run stripe:listen`. Production: Dashboard webhook → /api/billing/webhook (see README).
+ */
 function isEntitlementActive(status: Stripe.Subscription.Status): boolean {
   return status === "active" || status === "trialing";
 }
@@ -35,8 +39,11 @@ export async function POST(request: NextRequest) {
       const session = event.data.object as Stripe.Checkout.Session;
       const userId = session.metadata?.userId;
       const plan = session.metadata?.plan;
-      if (userId && (plan === "starter" || plan === "club" || plan === "pro")) {
-        await updateSubscriptionByUserId(userId, plan);
+      if (
+        userId &&
+        (plan === "paid" || plan === "starter" || plan === "club" || plan === "pro")
+      ) {
+        await updateSubscriptionByUserId(userId, "paid");
       }
     }
 

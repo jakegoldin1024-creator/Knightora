@@ -1,14 +1,16 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { getSessionAccount, getSessionCookieName, type SubscriptionPlan } from "@/lib/account-store";
+import { getSessionAccount, getSessionCookieName } from "@/lib/account-store";
+import type { SubscriptionPlan } from "@/lib/subscription";
 import { resolveClerkKnightoraAccount } from "@/lib/clerk-account";
-import { getPriceIdForPlan, getStripeClient, isBillablePlan } from "@/lib/billing";
+import { getPriceIdForPlan, getStripeClient, isBillablePlan, type BillingInterval } from "@/lib/billing";
 
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as { plan?: SubscriptionPlan };
+    const body = (await request.json()) as { plan?: SubscriptionPlan; interval?: BillingInterval };
     const plan = body.plan ?? "free";
+    const interval: BillingInterval = body.interval === "year" ? "year" : "month";
     if (!isBillablePlan(plan)) {
       throw new Error("That plan does not require checkout.");
     }
@@ -28,7 +30,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Please sign in before starting checkout." }, { status: 401 });
     }
 
-    const priceId = getPriceIdForPlan(plan);
+    const priceId = getPriceIdForPlan(plan, interval);
     if (!priceId) {
       return NextResponse.json({ error: `No Stripe price is configured for ${plan}.` }, { status: 500 });
     }
@@ -38,8 +40,8 @@ export async function POST(request: NextRequest) {
     const checkout = await stripe.checkout.sessions.create({
       mode: "subscription",
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${origin}/?billing=success`,
-      cancel_url: `${origin}/?billing=cancel`,
+      success_url: `${origin}/quiz?billing=success`,
+      cancel_url: `${origin}/quiz?billing=cancel`,
       customer_email: account.user.email,
       metadata: {
         userId: account.user.id,

@@ -1,13 +1,10 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import {
-  getSessionCookieName,
-  updateSubscription,
-  updateSubscriptionForClerk,
-  type SubscriptionPlan,
-} from "@/lib/account-store";
+import { getSessionCookieName, updateSubscription, updateSubscriptionForClerk } from "@/lib/account-store";
+import type { SubscriptionPlan } from "@/lib/subscription";
 import { isBillablePlan } from "@/lib/billing";
+import { resolveClerkKnightoraAccount } from "@/lib/clerk-account";
 
 export async function PUT(request: NextRequest) {
   try {
@@ -20,9 +17,13 @@ export async function PUT(request: NextRequest) {
     }
 
     if (requestedPlan === "admin") {
-      const expectedCode = process.env.KNIGHTORA_ADMIN_CODE;
+      const expectedCode =
+        process.env.KNIGHTORA_ADMIN_CODE ??
+        process.env.ADMIN_CODE ??
+        process.env.KNIGHTORA_UNLOCK_CODE ??
+        null;
       if (!expectedCode) {
-        throw new Error("Admin unlock is not configured on the server.");
+        throw new Error("Admin unlock is not configured. Set KNIGHTORA_ADMIN_CODE on the server.");
       }
       if ((body.adminCode ?? "").trim() !== expectedCode.trim()) {
         throw new Error("Invalid admin code.");
@@ -31,6 +32,8 @@ export async function PUT(request: NextRequest) {
 
     const { userId } = await auth();
     if (userId) {
+      // Ensure a Knightora user row exists for this Clerk account before plan updates.
+      await resolveClerkKnightoraAccount();
       const user = await updateSubscriptionForClerk(userId, requestedPlan);
       return NextResponse.json({ user }, { status: 200 });
     }

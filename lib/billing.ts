@@ -1,23 +1,26 @@
 import Stripe from "stripe";
-import type { SubscriptionPlan } from "@/lib/account-store";
+import type { SubscriptionPlan } from "@/lib/subscription";
 
-const BILLABLE_PLANS: SubscriptionPlan[] = ["starter", "club", "pro"];
+const BILLABLE_PLANS: SubscriptionPlan[] = ["paid"];
+
+export type BillingInterval = "month" | "year";
 
 export function isBillablePlan(plan: SubscriptionPlan) {
   return BILLABLE_PLANS.includes(plan);
 }
 
-export function getPriceIdForPlan(plan: SubscriptionPlan): string | null {
-  if (plan === "starter") return process.env.STRIPE_PRICE_STARTER ?? null;
-  if (plan === "club") return process.env.STRIPE_PRICE_CLUB ?? null;
-  if (plan === "pro") return process.env.STRIPE_PRICE_PRO ?? null;
-  return null;
+export function getPriceIdForPlan(plan: SubscriptionPlan, interval: BillingInterval = "month"): string | null {
+  if (plan !== "paid") return null;
+  if (interval === "year") {
+    return process.env.STRIPE_PRICE_PAID_YEARLY ?? process.env.STRIPE_PRICE_YEARLY ?? null;
+  }
+  return process.env.STRIPE_PRICE_PAID_MONTHLY ?? process.env.STRIPE_PRICE_STARTER ?? null;
 }
 
 export function getPlanForPriceId(priceId: string): SubscriptionPlan | null {
-  if (priceId === process.env.STRIPE_PRICE_STARTER) return "starter";
-  if (priceId === process.env.STRIPE_PRICE_CLUB) return "club";
-  if (priceId === process.env.STRIPE_PRICE_PRO) return "pro";
+  const month = process.env.STRIPE_PRICE_PAID_MONTHLY ?? process.env.STRIPE_PRICE_STARTER;
+  const year = process.env.STRIPE_PRICE_PAID_YEARLY ?? process.env.STRIPE_PRICE_YEARLY;
+  if (priceId && (priceId === month || priceId === year)) return "paid";
   return null;
 }
 

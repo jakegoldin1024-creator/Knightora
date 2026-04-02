@@ -1,9 +1,11 @@
-import type { SubscriptionPlan } from "@/lib/account-store";
+import type { SubscriptionPlan } from "@/lib/subscription";
 import type { OpeningLine } from "@/lib/opening-line";
 import { buildOpeningLineFromSanMoves } from "@/lib/opening-line";
 import {
   CLUB_EXTRA_LINE_MOVES,
+  DEVIATION_LINE_MOVES,
   MAIN_LINE_MOVES,
+  MAIN_LINE_STEP_HINTS,
   PRO_EXTRA_LINE_MOVES,
   STARTER_EXTRA_LINE_MOVES,
 } from "@/data/opening-line-sequences";
@@ -11,6 +13,7 @@ import {
 export type TrainingLesson = {
   id: string;
   title: string;
+  chapter?: string;
   focus: string;
   prompt: string;
   choices: string[];
@@ -27,8 +30,33 @@ export type TrainingLesson = {
   };
   /** Multi-move opening line: tap each move in order (generated from SAN). */
   line?: OpeningLine;
+  /** Shown after opponent-deviation line drills: what to aim for in the middlegame. */
+  deviationPlan?: string;
   /** If set, lesson requires this plan tier or higher. */
   minPlan?: SubscriptionPlan;
+  /** Variation branch this lesson belongs to (for branch-specific routing). */
+  variationId?: string;
+};
+
+export type TrainingTrackIntro = {
+  whyThisOpening: string;
+  history: string;
+  viability: string;
+};
+
+export type TrainingVariation = {
+  id: string;
+  label: string;
+  summary: string;
+  style: "positional" | "balanced" | "tactical";
+  risk: "low" | "medium" | "high";
+  theoryLoad: "light" | "medium" | "heavy";
+  tempo: string;
+  middlegamePlans: string[];
+  fitSignals: string[];
+  sampleLine: string;
+  timeControlFit: string;
+  commonMistakes: string[];
 };
 
 export type TrainingTrack = {
@@ -36,6 +64,8 @@ export type TrainingTrack = {
   modules: string[];
   studies?: string[];
   lessons: TrainingLesson[];
+  intro?: TrainingTrackIntro;
+  variations?: TrainingVariation[];
 };
 
 export const trainingCatalog: Record<string, TrainingTrack> = {
@@ -613,7 +643,7 @@ export const trainingCatalog: Record<string, TrainingTrack> = {
   },
 };
 
-const PLAN_ORDER: SubscriptionPlan[] = ["free", "starter", "club", "pro", "admin"];
+const PLAN_ORDER: SubscriptionPlan[] = ["free", "paid", "admin"];
 
 function planRank(plan: SubscriptionPlan): number {
   const order = PLAN_ORDER.indexOf(plan);
@@ -621,7 +651,7 @@ function planRank(plan: SubscriptionPlan): number {
 }
 
 export function isLessonUnlockedForPlan(lesson: TrainingLesson, plan: SubscriptionPlan): boolean {
-  const min = lesson.minPlan ?? "free";
+  const min = lesson.minPlan ?? "paid";
   return planRank(plan) >= planRank(min);
 }
 
@@ -632,15 +662,19 @@ export function filterLessonsForPlan(lessons: TrainingLesson[], plan: Subscripti
 function lineLessonFromMoves(
   id: string,
   title: string,
+  chapter: string,
   focus: string,
   moves: string[],
   explanation: string,
   minPlan?: SubscriptionPlan,
+  stepHints?: string[],
+  variationId?: string,
 ): TrainingLesson {
-  const line = buildOpeningLineFromSanMoves(moves);
+  const line = buildOpeningLineFromSanMoves(moves, stepHints);
   return {
     id,
     title,
+    chapter,
     focus,
     prompt: `Full line (${moves.length} moves): tap each half-move in order. ${moves.slice(0, 10).join(" ")}${moves.length > 10 ? " …" : ""}`,
     choices: [],
@@ -648,6 +682,7 @@ function lineLessonFromMoves(
     explanation,
     line,
     minPlan,
+    variationId,
   };
 }
 
@@ -655,13 +690,18 @@ function buildTieredLineLessons(openingKey: string): TrainingLesson[] {
   const out: TrainingLesson[] = [];
   const main = MAIN_LINE_MOVES[openingKey];
   if (main) {
+    const mainHints = MAIN_LINE_STEP_HINTS[openingKey];
     out.push(
       lineLessonFromMoves(
         `${openingKey}-main-line`,
         "Main line — full drill",
+        "Mainline",
         "Full line",
         main,
         `You walked through ${main.length} plies of a principled main line. This is how Knightora builds real repertoire memory: move order, not just slogan-level ideas.`,
+        "paid",
+        mainHints,
+        "main",
       ),
     );
   }
@@ -670,11 +710,14 @@ function buildTieredLineLessons(openingKey: string): TrainingLesson[] {
     out.push(
       lineLessonFromMoves(
         `${openingKey}-line-starter`,
-        "Starter — extra branch",
+        "Foundation branch",
+        "Mainline",
         "Theory depth",
         starter,
         `A second main branch (${starter.length} plies) to widen your tree while keeping the same structure-first mindset.`,
-        "starter",
+        "paid",
+        buildTierStepHints(openingKey, "starter", starter),
+        "foundation",
       ),
     );
   }
@@ -683,11 +726,14 @@ function buildTieredLineLessons(openingKey: string): TrainingLesson[] {
     out.push(
       lineLessonFromMoves(
         `${openingKey}-line-club`,
-        "Club — heavier continuation",
+        "Tournament branch",
+        "Mainline",
         "Line depth",
         club,
         `A longer fight (${club.length} plies) in the middlegame transition from your opening.`,
-        "club",
+        "paid",
+        buildTierStepHints(openingKey, "club", club),
+        "tournament",
       ),
     );
   }
@@ -696,15 +742,86 @@ function buildTieredLineLessons(openingKey: string): TrainingLesson[] {
     out.push(
       lineLessonFromMoves(
         `${openingKey}-line-pro`,
-        "Pro — deep theory",
+        "Master branch",
+        "Mainline",
         "Maximum depth",
         pro,
         `A maximal single-line drill (${pro.length} plies) for when you want tournament-grade depth.`,
-        "pro",
+        "paid",
+        buildTierStepHints(openingKey, "pro", pro),
+        "master",
       ),
     );
   }
   return out;
+}
+
+function buildProgressiveLineCheckpoints(openingKey: string): TrainingLesson[] {
+  const sequences: Array<{ key: string; title: string; moves: string[] | undefined }> = [
+    { key: "main", title: "Main line", moves: MAIN_LINE_MOVES[openingKey] },
+    { key: "starter", title: "Foundation branch", moves: STARTER_EXTRA_LINE_MOVES[openingKey] },
+    { key: "club", title: "Tournament branch", moves: CLUB_EXTRA_LINE_MOVES[openingKey] },
+    { key: "pro", title: "Master branch", moves: PRO_EXTRA_LINE_MOVES[openingKey] },
+  ];
+
+  const lessons: TrainingLesson[] = [];
+  for (const sequence of sequences) {
+    const moves = sequence.moves;
+    if (!moves || moves.length < 10) continue;
+
+    const checkpoints = [8, 12, 16, 20, 24]
+      .filter((n) => n < moves.length)
+      .concat(moves.length)
+      .filter((n, idx, arr) => arr.indexOf(n) === idx);
+
+    for (const plies of checkpoints) {
+      const sliced = moves.slice(0, plies);
+      const tierHint = sequence.key === "main" ? "Mainline recall" : `${sequence.title} recall`;
+      lessons.push(
+        lineLessonFromMoves(
+          `${openingKey}-checkpoint-${sequence.key}-${plies}`,
+          `${sequence.title} checkpoint — ${plies} plies`,
+          "Review and retention",
+          "Move-order retention",
+          sliced,
+          `Checkpoint drill: replay the first ${plies} plies from the ${sequence.title.toLowerCase()} without hesitation so the move order survives practical time pressure.`,
+          "paid",
+          sliced.map((san, idx) => `${tierHint}: ${buildHintFromSan(san, idx)}`),
+          sequence.key === "main"
+            ? "main"
+            : sequence.key === "starter"
+              ? "foundation"
+              : sequence.key === "club"
+                ? "tournament"
+                : "master",
+        ),
+      );
+    }
+  }
+
+  return lessons;
+}
+
+function buildDeviationLessons(openingKey: string): TrainingLesson[] {
+  const branches = DEVIATION_LINE_MOVES[openingKey] ?? [];
+  return branches.map((branch, index) => {
+    const base = lineLessonFromMoves(
+      `${openingKey}-deviation-${index + 1}`,
+      `Deviation — ${branch.title}`,
+      "Opponent deviations",
+      "Practical responses",
+      branch.moves,
+      "You ran the right move order for this sideline. Over the board, pair it with the plan below so you are not guessing after the fork in the road.",
+      undefined,
+      branch.hints ?? buildDeviationStepHints(branch.title, branch.plan, branch.moves),
+      "deviation",
+    );
+    return {
+      ...base,
+      deviationPlan: branch.plan,
+      prompt: `${branch.title}: tap each half-move in order (${branch.moves.length} plies). ${branch.moves.slice(0, 10).join(" ")}${branch.moves.length > 10 ? " …" : ""}`,
+    };
+  });
 }
 
 export function getTrainingTrack(openingKey: string): TrainingTrack {
@@ -732,6 +849,8 @@ export function getTrainingTrack(openingKey: string): TrainingTrack {
 
   return {
     ...baseTrack,
+    intro: buildTrackIntro(openingKey, baseTrack.modules),
+    variations: buildTrackVariations(openingKey),
     studies: baseTrack.studies ?? [
       `Review ${baseTrack.modules[0].toLowerCase()} before expanding your repertoire tree.`,
       `Study ${baseTrack.modules[1].toLowerCase()} through 2-3 model games.`,
@@ -739,10 +858,16 @@ export function getTrainingTrack(openingKey: string): TrainingTrack {
     ],
     lessons: [
       ...buildTieredLineLessons(openingKey),
-      ...baseTrack.lessons,
+      ...buildProgressiveLineCheckpoints(openingKey),
+      ...buildDeviationLessons(openingKey),
+      ...baseTrack.lessons.map((lesson) => ({
+        ...lesson,
+        chapter: lesson.chapter ?? (lesson.title.toLowerCase().includes("deviation") ? "Opponent deviations" : "Core concepts"),
+      })),
       {
         id: `${openingKey}-review-1`,
         title: "Study priority",
+        chapter: "Core concepts",
         focus: baseTrack.modules[0],
         prompt: `When you review ${openingKey}, what should come before rare sidelines?`,
         choices: [baseTrack.modules[0], "Random traps", "Engine-only memorization"],
@@ -752,6 +877,7 @@ export function getTrainingTrack(openingKey: string): TrainingTrack {
       {
         id: `${openingKey}-review-2`,
         title: "Repertoire discipline",
+        chapter: "Core concepts",
         focus: baseTrack.modules[1],
         prompt: `What makes an opening actually usable in tournament or online play?`,
         choices: ["Clear recurring plans", "Maximum theory at once", "Learning every transposition first"],
@@ -759,8 +885,149 @@ export function getTrainingTrack(openingKey: string): TrainingTrack {
         explanation: "A playable repertoire is built on repeatable structures and plans, not on trying to memorize everything at once.",
       },
       ...buildExtendedReviewLessons(openingKey, baseTrack.modules),
+      ...buildEndgameMicroLessons(openingKey),
     ],
   };
+}
+
+function buildTrackIntro(openingKey: string, modules: string[]): TrainingTrackIntro {
+  const openingLabel = openingKey.toUpperCase();
+  const moduleA = modules[0] ?? "Core setup";
+  const moduleB = modules[1] ?? "Typical plans";
+  return {
+    whyThisOpening: `${openingLabel} rewards players who want a repeatable structure they can trust under time pressure. It gives you clear early priorities in ${moduleA.toLowerCase()} and a practical transition into ${moduleB.toLowerCase()}.`,
+    history: `${openingLabel} has held up across classical tournament play, modern online practice, and engine-era preparation. The ideas evolved, but the core structure stayed viable because it leads to playable middlegames rather than one-move tricks.`,
+    viability:
+      "Based on your quiz profile, this path is practical when you prefer positions with recurring plans, reliable development patterns, and clear decision points you can revisit after each game.",
+  };
+}
+
+function buildTrackVariations(openingKey: string): TrainingVariation[] {
+  const openingLabel = openingKey.toUpperCase();
+  return [
+    {
+      id: "foundation",
+      label: "Foundation branch",
+      summary: "Lower-theory, pattern-first version of the opening.",
+      style: "positional",
+      risk: "low",
+      theoryLoad: "light",
+      tempo: "Steady development, fewer forcing races.",
+      middlegamePlans: ["Complete development first", "Choose one central break on timing", "Trade into favorable structures"],
+      fitSignals: ["Best for lower-theory preference", "Strong for rapid/blitz consistency"],
+      sampleLine: `${openingLabel} setup line with practical piece development and one stable break.`,
+      timeControlFit: "Excellent in rapid and blitz when you want stable plans quickly.",
+      commonMistakes: ["Rushing pawn breaks before development", "Trading key defenders too early"],
+    },
+    {
+      id: "main",
+      label: "Main line",
+      summary: "Most representative practical line used in core training.",
+      style: "balanced",
+      risk: "medium",
+      theoryLoad: "medium",
+      tempo: "Balanced initiative and structure control.",
+      middlegamePlans: ["Contest center early", "Activate pieces with tempo", "Play the key pawn break before move 15"],
+      fitSignals: ["Good default for most players", "Strong blend of ideas + concrete lines"],
+      sampleLine: `${openingLabel} principled backbone line used in tournament prep.`,
+      timeControlFit: "Works well across rapid and classical with balanced prep time.",
+      commonMistakes: ["Ignoring opponent counter-break timing", "Playing only memorized moves without plan"],
+    },
+    {
+      id: "tournament",
+      label: "Tournament branch",
+      summary: "Sharper continuation with deeper move-order precision.",
+      style: "tactical",
+      risk: "medium",
+      theoryLoad: "heavy",
+      tempo: "Quicker forcing sequences and tactical windows.",
+      middlegamePlans: ["Keep initiative through concrete threats", "Punish inaccurate move orders", "Convert activity into structure gains"],
+      fitSignals: ["Fits tactical players", "Best when you enjoy deeper memorization"],
+      sampleLine: `${openingLabel} tournament-tested continuation with heavier theory load.`,
+      timeControlFit: "Best in rapid/classical when you can calculate forcing continuations.",
+      commonMistakes: ["Overpushing without king safety", "Missing tactical resources after move-order changes"],
+    },
+    {
+      id: "master",
+      label: "Master branch",
+      summary: "Maximum-depth branch for long preparation cycles.",
+      style: "tactical",
+      risk: "high",
+      theoryLoad: "heavy",
+      tempo: "High-precision lines where one tempo matters.",
+      middlegamePlans: ["Hold exact move order", "Prepare forcing transpositions", "Use novelties sparingly but accurately"],
+      fitSignals: ["Fits high-theory preference", "Best for deep prep and long games"],
+      sampleLine: `${openingLabel} deep prep branch with maximal line depth.`,
+      timeControlFit: "Strongest in classical and prepared league/tournament games.",
+      commonMistakes: ["Forgetting transposition move-orders", "Playing too fast in critical forcing positions"],
+    },
+  ];
+}
+
+function buildTierStepHints(openingKey: string, tier: "starter" | "club" | "pro", moves: string[]): string[] {
+  const tierPrefix =
+    tier === "starter"
+      ? "Starter cue"
+      : tier === "club"
+        ? "Club cue"
+        : "Pro cue";
+  const openingLabel = openingKey.toUpperCase();
+  return moves.map((san, idx) => `${tierPrefix} (${openingLabel}): ${buildHintFromSan(san, idx)}`);
+}
+
+function buildDeviationStepHints(title: string, plan: string, moves: string[]): string[] {
+  const planAnchor = plan.split(/[.!?]/)[0]?.trim() ?? plan.trim();
+  return moves.map((san, idx) => {
+    if (idx === 0) return `${title}: ${buildHintFromSan(san, idx)}`;
+    if (idx === moves.length - 1) return `${buildHintFromSan(san, idx)} Plan anchor: ${planAnchor}.`;
+    return buildHintFromSan(san, idx);
+  });
+}
+
+function buildHintFromSan(san: string, idx: number): string {
+  const side = idx % 2 === 0 ? "White" : "Black";
+  if (san.startsWith("O-O-O")) return `${side} castles long and commits to opposite-wing play.`;
+  if (san.startsWith("O-O")) return `${side} castles, improving king safety and rook activity.`;
+  if (san.includes("=")) return `${side} promotes and converts the pawn into concrete force.`;
+  if (san.includes("#")) return `${side} ends the game with checkmate.`;
+  if (san.includes("+")) return `${side} gives check and forces a concrete reply.`;
+  if (san.includes("x")) return `${side} captures to shift material or structure in their favor.`;
+  if (/^[N]/.test(san)) return `${side} develops a knight toward central control and tactics.`;
+  if (/^[B]/.test(san)) return `${side} improves bishop scope and diagonal pressure.`;
+  if (/^[R]/.test(san)) return `${side} activates a rook toward open files and coordination.`;
+  if (/^[Q]/.test(san)) return `${side} repositions the queen to support key squares and threats.`;
+  if (/^[K]/.test(san)) return `${side} improves king placement for safety or endgame activity.`;
+  return `${side} reinforces structure and prepares the next plan step.`;
+}
+
+function buildEndgameMicroLessons(openingKey: string): TrainingLesson[] {
+  const openingLabel = openingKey.toUpperCase();
+  return [
+    {
+      id: `${openingKey}-endgame-micro-1`,
+      title: "Endgame micro — activate king early",
+      chapter: "Endgame micro-drills",
+      focus: "King activity",
+      prompt: `In simplified ${openingLabel} structures, what usually improves your winning chances first?`,
+      choices: ["Activate the king toward the center", "Keep the king on the back rank", "Push random flank pawns"],
+      answer: "Activate the king toward the center",
+      explanation: "In many practical endgames, king activity decides races and conversions faster than passive piece shuffling.",
+    },
+    {
+      id: `${openingKey}-endgame-micro-2`,
+      title: "Endgame micro — practical pawn breaks",
+      chapter: "Endgame micro-drills",
+      focus: "Pawn play",
+      prompt: `When both sides have one rook and several pawns, what is a strong practical default?`,
+      choices: [
+        "Create a passed pawn with a supported break",
+        "Trade every pawn immediately",
+        "Ignore king safety and chase checks",
+      ],
+      answer: "Create a passed pawn with a supported break",
+      explanation: "A supported break that creates a passer gives your rook and king a clear target and practical winning plan.",
+    },
+  ];
 }
 
 function buildExtendedReviewLessons(openingKey: string, modules: string[]): TrainingLesson[] {
@@ -772,6 +1039,7 @@ function buildExtendedReviewLessons(openingKey: string, modules: string[]): Trai
     {
       id: `${openingKey}-review-3`,
       title: "Move-order discipline",
+      chapter: "Core concepts",
       focus: focusA,
       prompt: `What is the best first priority when learning ${openingKey} move orders?`,
       choices: ["Understand the core branch first", "Memorize every sideline", "Rely only on engine top lines"],
@@ -781,6 +1049,7 @@ function buildExtendedReviewLessons(openingKey: string, modules: string[]): Trai
     {
       id: `${openingKey}-review-4`,
       title: "Practical prep split",
+      chapter: "Core concepts",
       focus: focusA,
       prompt: "How should most improving players split opening study time?",
       choices: ["Mostly structures and plans, then tactics", "Only memorization", "Only blitz games"],
@@ -790,6 +1059,7 @@ function buildExtendedReviewLessons(openingKey: string, modules: string[]): Trai
     {
       id: `${openingKey}-review-5`,
       title: "Opponent deviations",
+      chapter: "Opponent deviations",
       focus: focusB,
       prompt: "What is the most practical response to an uncommon opponent move?",
       choices: ["Return to your setup principles", "Panic and improvise", "Force a memorized trap"],
@@ -799,6 +1069,7 @@ function buildExtendedReviewLessons(openingKey: string, modules: string[]): Trai
     {
       id: `${openingKey}-review-6`,
       title: "Middle-game bridge",
+      chapter: "Core concepts",
       focus: focusB,
       prompt: "What makes an opening truly useful in rated games?",
       choices: ["A clear middlegame plan", "A flashy line only", "Perfect recall of obscure traps"],
@@ -808,6 +1079,7 @@ function buildExtendedReviewLessons(openingKey: string, modules: string[]): Trai
     {
       id: `${openingKey}-review-7`,
       title: "Review timing",
+      chapter: "Review and retention",
       focus: focusC,
       prompt: "When should you revisit a line that caused mistakes?",
       choices: ["As soon as it is due or fresh", "At random months later", "Never, move on immediately"],
@@ -817,6 +1089,7 @@ function buildExtendedReviewLessons(openingKey: string, modules: string[]): Trai
     {
       id: `${openingKey}-review-8`,
       title: "Game analysis loop",
+      chapter: "Review and retention",
       focus: focusC,
       prompt: "After each game, what opening note is most helpful?",
       choices: ["First critical decision point", "Only final result", "Only engine eval number"],
@@ -826,6 +1099,7 @@ function buildExtendedReviewLessons(openingKey: string, modules: string[]): Trai
     {
       id: `${openingKey}-review-9`,
       title: "Repertoire depth",
+      chapter: "Core concepts",
       focus: focusA,
       prompt: "What is a better early goal for repertoire depth?",
       choices: ["One dependable line deeply", "Five lines shallowly", "Constantly switching systems"],
@@ -835,6 +1109,7 @@ function buildExtendedReviewLessons(openingKey: string, modules: string[]): Trai
     {
       id: `${openingKey}-review-10`,
       title: "Counterplay awareness",
+      chapter: "Opponent deviations",
       focus: focusB,
       prompt: "What should you always identify before move 10?",
       choices: ["Both sides' main pawn breaks", "Only your king safety", "Only your next move"],
@@ -844,6 +1119,7 @@ function buildExtendedReviewLessons(openingKey: string, modules: string[]): Trai
     {
       id: `${openingKey}-review-11`,
       title: "Time-control adaptation",
+      chapter: "Review and retention",
       focus: focusC,
       prompt: "How should opening prep differ in faster time controls?",
       choices: ["Prefer simpler, repeatable plans", "Use only sharp novelties", "Skip preparation entirely"],
@@ -853,6 +1129,7 @@ function buildExtendedReviewLessons(openingKey: string, modules: string[]): Trai
     {
       id: `${openingKey}-review-12`,
       title: "Training quality check",
+      chapter: "Review and retention",
       focus: focusC,
       prompt: "What signals that your opening training is working?",
       choices: ["Fewer early-game blunders", "Longer study notes only", "More tab browsing"],
@@ -860,4 +1137,52 @@ function buildExtendedReviewLessons(openingKey: string, modules: string[]): Trai
       explanation: "Performance gains in your first 10-15 moves are the strongest practical signal.",
     },
   ];
+}
+
+function validateTrainingTrack(openingKey: string, track: TrainingTrack): string[] {
+  const issues: string[] = [];
+  if (!track.intro?.whyThisOpening?.trim()) issues.push(`[${openingKey}] intro missing whyThisOpening`);
+  if (!track.intro?.history?.trim()) issues.push(`[${openingKey}] intro missing history`);
+  if (!track.intro?.viability?.trim()) issues.push(`[${openingKey}] intro missing viability`);
+  if (!track.variations?.length) issues.push(`[${openingKey}] missing variation definitions`);
+  for (const variation of track.variations ?? []) {
+    if (!variation.label.trim()) issues.push(`[${openingKey}] variation missing label`);
+    if (!variation.summary.trim()) issues.push(`[${openingKey}] variation "${variation.id}" missing summary`);
+    if (!variation.sampleLine.trim()) issues.push(`[${openingKey}] variation "${variation.id}" missing sample line`);
+    if (!variation.timeControlFit.trim()) issues.push(`[${openingKey}] variation "${variation.id}" missing timeControlFit`);
+    if (!variation.commonMistakes.length) issues.push(`[${openingKey}] variation "${variation.id}" missing commonMistakes`);
+  }
+  for (const lesson of track.lessons) {
+    if (!lesson.id.trim()) issues.push(`[${openingKey}] lesson missing id`);
+    if (!lesson.prompt.trim()) issues.push(`[${openingKey}] ${lesson.id}: missing prompt`);
+
+    if (lesson.board) {
+      const board = lesson.board;
+      if (lesson.answer !== board.targetSquare) {
+        issues.push(`[${openingKey}] ${lesson.id}: board answer "${lesson.answer}" does not match target "${board.targetSquare}"`);
+      }
+      if (board.sourceSquare) {
+        const hasSource = board.pieces.some((p) => p.square === board.sourceSquare);
+        if (!hasSource) {
+          issues.push(`[${openingKey}] ${lesson.id}: source "${board.sourceSquare}" not present in board pieces`);
+        }
+      }
+    }
+
+    if (!lesson.board && !lesson.line?.steps?.length) {
+      if (!lesson.choices.length) issues.push(`[${openingKey}] ${lesson.id}: quiz lesson has no choices`);
+      if (lesson.choices.length && !lesson.choices.includes(lesson.answer)) {
+        issues.push(`[${openingKey}] ${lesson.id}: answer is not included in choices`);
+      }
+    }
+  }
+  return issues;
+}
+
+if (process.env.NODE_ENV !== "production") {
+  const keys = Object.keys(trainingCatalog);
+  const allIssues = keys.flatMap((key) => validateTrainingTrack(key, getTrainingTrack(key)));
+  if (allIssues.length) {
+    console.warn("[training-audit] Found lesson data issues:\n" + allIssues.join("\n"));
+  }
 }

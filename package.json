@@ -4,9 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:stable": "WATCHPACK_POLLING=true next dev --hostname 127.0.0.1 --port 3000",
+    "dev:stable:webpack": "WATCHPACK_POLLING=true next dev --webpack --hostname 127.0.0.1 --port 3000",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "smoke:game-analysis": "node --experimental-strip-types scripts/smoke-game-analysis.mts",
+    "stripe:listen": "stripe listen --forward-to localhost:3000/api/billing/webhook"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.0.6",

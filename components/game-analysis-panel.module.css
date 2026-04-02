@@ -1,0 +1,132 @@
+.panel {
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+  border-radius: 24px;
+  border: 1px solid rgba(30, 29, 26, 0.12);
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.header {
+  display: grid;
+  gap: 10px;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8f3b2e;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.intro {
+  margin: 0;
+  color: rgba(30, 29, 26, 0.78);
+  line-height: 1.6;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.button {
+  border: 1px solid rgba(30, 29, 26, 0.14);
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.buttonPrimary {
+  background: linear-gradient(135deg, #8f3b2e, #d08f3d);
+  color: #fff;
+  border-color: transparent;
+}
+
+.selectInput,
+.analysisTextarea,
+.analysisUrlInput {
+  width: 100%;
+  border: 1px solid rgba(30, 29, 26, 0.16);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 10px 12px;
+  color: rgba(30, 29, 26, 0.9);
+}
+
+.selectInput {
+  width: auto;
+  min-width: 150px;
+}
+
+.analysisTextarea {
+  min-height: 160px;
+  resize: vertical;
+}
+
+.status {
+  margin: 0;
+  color: rgba(30, 29, 26, 0.75);
+  font-size: 0.9rem;
+}
+
+.error {
+  margin: 0;
+  color: #8f3b2e;
+  font-weight: 700;
+}
+
+.report {
+  display: grid;
+  gap: 12px;
+}
+
+.grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.card {
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(30, 29, 26, 0.12);
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.cardLabel {
+  margin: 0 0 6px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8f3b2e;
+}
+
+.list {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  line-height: 1.55;
+}
+
+.details summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

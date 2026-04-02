@@ -3,8 +3,9 @@ import { promises as fs } from "fs";
 import path from "path";
 import type { QuizProfile, RepertoireResult } from "@/lib/recommendations";
 import type { ChessProfileResponse } from "@/lib/chesscom";
+import type { SubscriptionPlan } from "@/lib/subscription";
 
-export type SubscriptionPlan = "free" | "starter" | "club" | "pro" | "admin";
+export type { SubscriptionPlan };
 
 export type LessonStat = {
   attempts: number;
@@ -292,9 +293,16 @@ function publicUser(user: StoredUser) {
     id: user.id,
     name: user.name,
     email: user.email,
-    subscriptionPlan: user.subscriptionPlan,
+    subscriptionPlan: normalizeStoredPlan(user.subscriptionPlan),
     createdAt: user.createdAt,
   };
+}
+
+function normalizeStoredPlan(plan: SubscriptionPlan): SubscriptionPlan {
+  const raw = plan as string;
+  if (raw === "starter" || raw === "club" || raw === "pro") return "paid";
+  if (raw === "paid" || raw === "admin") return raw;
+  return "free";
 }
 
 function createSession(db: AppDb, userId: string) {
@@ -312,7 +320,14 @@ function createSession(db: AppDb, userId: string) {
 async function readDb(): Promise<AppDb> {
   try {
     const file = await fs.readFile(DB_PATH, "utf8");
-    return JSON.parse(file) as AppDb;
+    const db = JSON.parse(file) as AppDb;
+    for (const user of db.users) {
+      const raw = user.subscriptionPlan as string;
+      if (raw === "starter" || raw === "club" || raw === "pro") {
+        user.subscriptionPlan = "paid";
+      }
+    }
+    return db;
   } catch {
     return { users: [], sessions: [] };
   }

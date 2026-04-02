@@ -57,32 +57,48 @@ Then sign in and use the "Admin access code" field in the account panel.
 
 ### Real Stripe billing setup
 
-1. Copy env template and fill Stripe values:
+The app uses **Stripe Checkout** (subscription mode) with a single **paid** tier and **two** recurring prices (monthly and yearly). Code: [`lib/billing.ts`](lib/billing.ts), [`app/api/billing/checkout/route.ts`](app/api/billing/checkout/route.ts), [`app/api/billing/webhook/route.ts`](app/api/billing/webhook/route.ts).
+
+1. Copy env template and fill values:
 
 ```bash
 cp .env.example .env.local
 ```
 
-2. Create three recurring Stripe prices and set:
-   - `STRIPE_PRICE_STARTER`
-   - `STRIPE_PRICE_CLUB`
-   - `STRIPE_PRICE_PRO`
+2. In [Stripe Dashboard](https://dashboard.stripe.com) (**Test mode** for local dev):
 
-3. Start dev server:
+   - **Products** → create a product (e.g. “Knightora”).
+   - Add **two recurring prices** (e.g. monthly and yearly; amounts should match your marketing copy in [`lib/pricing-plans.ts`](lib/pricing-plans.ts)).
+   - Copy each **Price ID** (`price_...`) into `.env.local`:
+     - `STRIPE_PRICE_PAID_MONTHLY`
+     - `STRIPE_PRICE_PAID_YEARLY`  
+     (Optional legacy names: `STRIPE_PRICE_STARTER` / `STRIPE_PRICE_YEARLY` are still read by `lib/billing.ts` if the `PAID_*` vars are unset.)
+   - **Developers → API keys** → copy the **Secret key** into `STRIPE_SECRET_KEY`.
+
+3. Start the dev server:
 
 ```bash
 npm run dev
 ```
 
-4. In a second terminal, forward Stripe webhooks:
+4. In a second terminal, forward webhooks (requires [Stripe CLI](https://stripe.com/docs/stripe-cli)):
 
 ```bash
-stripe listen --forward-to localhost:3000/api/billing/webhook
+npm run stripe:listen
 ```
 
-5. Copy the webhook secret from Stripe CLI into `STRIPE_WEBHOOK_SECRET`.
+5. Copy the **`whsec_...`** secret printed by the CLI into `STRIPE_WEBHOOK_SECRET` in `.env.local`.
 
-When a checkout completes, Knightora updates the user plan from webhook events.
+6. End-to-end check: sign in (Clerk), open the quiz paywall, start checkout, pay with a [test card](https://docs.stripe.com/testing). After redirect to `/quiz`, your account should show **paid** (webhook updates the plan). Cancel the subscription in the Stripe Dashboard to confirm downgrade to **free**.
+
+**Production (e.g. Vercel):** add the same variables in project settings. Create a **Webhook endpoint** URL `https://<your-domain>/api/billing/webhook` and subscribe to:
+
+- `checkout.session.completed`
+- `customer.subscription.created`
+- `customer.subscription.updated`
+- `customer.subscription.deleted`
+
+Paste that endpoint’s **signing secret** into `STRIPE_WEBHOOK_SECRET` for production (separate from the CLI secret used locally).
 
 ## Deploying beyond localhost (Knightora.ai)
 
@@ -91,8 +107,7 @@ Recommended: deploy with Vercel + connect `Knightora.ai`.
 1. Push this repo to GitHub.
 2. Import project in Vercel.
 3. Add all environment variables from `.env.example` in Vercel project settings.
-4. Add production Stripe webhook endpoint:
-   - `https://your-domain/api/billing/webhook`
+4. Add production Stripe webhook endpoint `https://your-domain/api/billing/webhook` with the four events listed under **Real Stripe billing setup** above; set `STRIPE_WEBHOOK_SECRET` to that endpoint’s signing secret.
 5. In your domain registrar DNS for `Knightora.ai`, point nameservers/records to Vercel.
 6. In Vercel Domains, attach `Knightora.ai` and `www.knightora.ai`.
 
