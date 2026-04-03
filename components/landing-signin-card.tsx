@@ -15,8 +15,7 @@ export function LandingSignInCard() {
         <p className={styles.signInCopy}>Save your training path, streaks, and progress across devices.</p>
         <div className={styles.signInEmbed}>
           <SignIn
-            path="/sign-in"
-            routing="path"
+            routing="hash"
             signUpUrl="/sign-up"
             fallbackRedirectUrl="/"
             oauthFlow="redirect"

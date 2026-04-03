@@ -1142,7 +1142,7 @@ function buildExtendedReviewLessons(openingKey: string, modules: string[]): Trai
   ].map((lesson) => ({ ...lesson, minPlan: "paid" as const }));
 }
 
-function validateTrainingTrack(openingKey: string, track: TrainingTrack): string[] {
+export function validateTrainingTrack(openingKey: string, track: TrainingTrack): string[] {
   const issues: string[] = [];
   if (!track.intro?.whyThisOpening?.trim()) issues.push(`[${openingKey}] intro missing whyThisOpening`);
   if (!track.intro?.history?.trim()) issues.push(`[${openingKey}] intro missing history`);

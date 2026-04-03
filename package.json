@@ -10,6 +10,7 @@
     "start": "next start",
     "lint": "eslint .",
     "smoke:game-analysis": "node --experimental-strip-types scripts/smoke-game-analysis.mts",
+    "validate:training": "node --import tsx scripts/validate-training-catalog.ts",
     "stripe:listen": "stripe listen --forward-to localhost:3000/api/billing/webhook"
   },
   "dependencies": {
@@ -27,6 +28,7 @@
     "@types/react-dom": "18.2.22",
     "eslint": "^9.22.0",
     "eslint-config-next": "^16.0.10",
+    "tsx": "^4.21.0",
     "typescript": "5.8.2"
   }
 }

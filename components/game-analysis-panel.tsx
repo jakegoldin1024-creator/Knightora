@@ -100,9 +100,28 @@ export function GameAnalysisPanel({ selectedPlan }: { selectedPlan: Subscription
         }),
       });
       const payload = (await response.json()) as GameAnalysisResult | { error?: string };
-      if (!response.ok || !("report" in payload)) {
-        throw new Error("error" in payload && payload.error ? payload.error : "Game analysis failed.");
+
+      if (response.status === 403) {
+        throw new Error(
+          "Full-game analysis needs an active Knightora subscription. Open Pricing to subscribe, then run analysis again while signed in.",
+        );
       }
+
+      if (!response.ok) {
+        const detail = "error" in payload && typeof payload.error === "string" ? payload.error : response.statusText;
+        if (response.status === 400) {
+          throw new Error(detail || "Could not read that game. Use a valid PGN or a public Chess.com / Lichess URL.");
+        }
+        if (response.status >= 500) {
+          throw new Error("The analysis service hit a server error. Wait a moment and try again.");
+        }
+        throw new Error(detail || "Game analysis failed.");
+      }
+
+      if (!("report" in payload)) {
+        throw new Error("Unexpected response from the analysis API.");
+      }
+
       setGameAnalysisResult(payload);
       const nextRecent = [
         {
@@ -121,10 +140,12 @@ export function GameAnalysisPanel({ selectedPlan }: { selectedPlan: Subscription
     } catch (error) {
       const message =
         error instanceof DOMException && error.name === "AbortError"
-          ? "Analysis took too long. Try a shorter game or reduce depth via GAME_ANALYSIS_DEPTH=2."
-          : error instanceof Error
-            ? error.message
-            : "Game analysis failed.";
+          ? "Analysis timed out after 25 seconds. Try a shorter game, paste a smaller PGN, or ask your host to raise limits."
+          : error instanceof TypeError && error.message.includes("fetch")
+            ? "Network error—check your connection and try again."
+            : error instanceof Error
+              ? error.message
+              : "Game analysis failed.";
       setGameAnalysisError(message);
     } finally {
       window.clearTimeout(timeout);

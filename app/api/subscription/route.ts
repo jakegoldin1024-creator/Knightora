@@ -6,6 +6,7 @@ import type { SubscriptionPlan } from "@/lib/subscription";
 import { isBillablePlan } from "@/lib/billing";
 import { resolveClerkKnightoraAccount } from "@/lib/clerk-account";
 import { syncClerkPublicSubscriptionPlan } from "@/lib/clerk-subscription-sync";
+import { ADMIN_UNLOCK_ENABLED } from "@/lib/admin-unlock";
 
 export async function PUT(request: NextRequest) {
   try {
@@ -18,6 +19,9 @@ export async function PUT(request: NextRequest) {
     }
 
     if (requestedPlan === "admin") {
+      if (!ADMIN_UNLOCK_ENABLED) {
+        throw new Error("Admin unlock is temporarily disabled.");
+      }
       const expectedCode =
         process.env.KNIGHTORA_ADMIN_CODE ??
         process.env.ADMIN_CODE ??

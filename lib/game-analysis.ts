@@ -36,6 +36,7 @@ export type GameAnalysisReport = {
 };
 
 const ANALYSIS_DEPTH = resolveAnalysisDepth();
+const MAX_ANALYSIS_PLIES = resolveMaxAnalysisPlies();
 
 export function analyzeGamePgn(input: { pgn: string; source: "pgn" | "chesscom" | "lichess"; level: AnalysisLevel }): GameAnalysisReport {
   const replay = new Chess();
@@ -45,7 +46,8 @@ export function analyzeGamePgn(input: { pgn: string; source: "pgn" | "chesscom" 
     throw new Error("PGN could not be parsed.");
   }
 
-  const history = replay.history({ verbose: true }) as Move[];
+  const fullHistory = replay.history({ verbose: true }) as Move[];
+  const history = fullHistory.length > MAX_ANALYSIS_PLIES ? fullHistory.slice(0, MAX_ANALYSIS_PLIES) : fullHistory;
   const board = new Chess();
   const analyzed: AnalyzedMove[] = [];
 
@@ -90,6 +92,13 @@ export function analyzeGamePgn(input: { pgn: string; source: "pgn" | "chesscom" 
   }
 
   const opening = detectOpeningName(input.pgn);
+  const recommendations = buildRecommendations(analyzed);
+  if (fullHistory.length > history.length) {
+    recommendations.unshift(
+      `Analysis covered the first ${history.length} half-moves (${fullHistory.length} total) so results return within typical server time limits.`,
+    );
+  }
+
   const keyMoments = analyzed
     .map((m, idx) => ({ idx, loss: m.evalLossCp }))
     .sort((a, b) => b.loss - a.loss)
@@ -108,7 +117,7 @@ export function analyzeGamePgn(input: { pgn: string; source: "pgn" | "chesscom" 
       keyMoments,
     },
     moves: analyzed,
-    recommendations: buildRecommendations(analyzed),
+    recommendations,
   };
 }
 
@@ -292,5 +301,11 @@ function resolveAnalysisDepth(): number {
   const raw = Number(process.env.GAME_ANALYSIS_DEPTH ?? "2");
   if (!Number.isFinite(raw)) return 2;
   return Math.min(4, Math.max(2, Math.floor(raw)));
+}
+
+function resolveMaxAnalysisPlies(): number {
+  const raw = Number(process.env.GAME_ANALYSIS_MAX_PLIES ?? "200");
+  if (!Number.isFinite(raw) || raw < 8) return 200;
+  return Math.min(400, Math.floor(raw));
 }
 

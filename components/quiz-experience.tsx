@@ -2,8 +2,9 @@
 
 import { UserButton, useAuth, useClerk, useSession } from "@clerk/nextjs";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type FormEvent } from "react";
 import { filterLessonsForPlan, getTrainingTrack, type TrainingLesson, type TrainingVariation } from "@/data/training";
+import { ADMIN_UNLOCK_ENABLED } from "@/lib/admin-unlock";
 import { type SubscriptionPlan, isPaidPlan } from "@/lib/subscription";
 import { buildFenFromKnightoraPlacements, inferSideToMoveFromSource } from "@/lib/board-fen";
 import { getLegalDestinationsForSource, isLegalDestinationForSource } from "@/lib/move-legality";
@@ -262,6 +263,32 @@ export function QuizExperience() {
       null,
     [trainingTracks, progress.completedLessons],
   );
+
+  const scrollDashboardIntoView = useCallback(() => {
+    window.setTimeout(() => {
+      document.getElementById("dashboard")?.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "start",
+      });
+    }, 80);
+  }, [reduceMotion]);
+
+  const goToOpeningsAfterRepertoireBuild = useCallback(() => {
+    setDashboardTab("openings");
+    scrollDashboardIntoView();
+  }, [scrollDashboardIntoView]);
+
+  const prepFlowStep = useMemo(() => {
+    if (!activeDashboard) return 0;
+    if (dashboardTab === "overview") return 1;
+    if (dashboardTab === "openings") return 2;
+    if (dashboardTab === "training") {
+      if (trainingUiPhase === "pick") return 3;
+      if (trainingUiPhase === "course") return 5;
+      return 4;
+    }
+    return 1;
+  }, [activeDashboard, dashboardTab, trainingUiPhase]);
 
   function clearLineAdvanceTimer() {
     if (lineAdvanceTimeoutRef.current != null) {
@@ -591,6 +618,7 @@ export function QuizExperience() {
     if (!profile.username?.trim()) {
       const dashboard = buildDashboard(profile, fallbackRepertoire, null, progress);
       setSavedDashboard(dashboard);
+      goToOpeningsAfterRepertoireBuild();
       return;
     }
 
@@ -616,6 +644,7 @@ export function QuizExperience() {
 
       const resolved = payload as ChessProfileResponse;
       setSavedDashboard(buildDashboard(profile, resolved.repertoire, resolved.insights, progress));
+      goToOpeningsAfterRepertoireBuild();
     } catch (error) {
       const message =
         error instanceof Error
@@ -623,6 +652,7 @@ export function QuizExperience() {
           : "We could not analyze that Chess.com account, so Knightora fell back to quiz-only recommendations.";
       setAnalysisError(message);
       setSavedDashboard(buildDashboard(profile, fallbackRepertoire, null, progress));
+      goToOpeningsAfterRepertoireBuild();
     } finally {
       setIsPending(false);
     }
@@ -1132,7 +1162,7 @@ export function QuizExperience() {
               </div>
             </div>
             {accountError ? <p className={styles.accountError}>{accountError}</p> : null}
-            {isLoaded && isSignedIn ? (
+            {isLoaded && isSignedIn && ADMIN_UNLOCK_ENABLED ? (
               <details className={styles.adminUnlockDetails}>
                 <summary>Admin unlock</summary>
                 <div className={styles.adminUnlockRow}>
@@ -1256,6 +1286,34 @@ export function QuizExperience() {
               <p className={styles.eyebrow}>Dashboard</p>
               <h2>Your saved repertoire, studies, and review queue</h2>
             </div>
+            {prepFlowStep > 0 ? (
+              <nav className={styles.flowRibbon} aria-label="Prep journey">
+                <ol className={styles.flowRibbonList}>
+                  {[
+                    { n: 1, label: "Quiz" },
+                    { n: 2, label: "Your lines" },
+                    { n: 3, label: "Pick opening" },
+                    { n: 4, label: "Hone line" },
+                    { n: 5, label: "Drills" },
+                  ].map((step) => {
+                    const done = prepFlowStep > step.n;
+                    const current = prepFlowStep === step.n;
+                    return (
+                      <li
+                        key={step.n}
+                        className={`${styles.flowStep} ${done ? styles.flowStepDone : ""} ${current ? styles.flowStepCurrent : ""}`}
+                        aria-current={current ? "step" : undefined}
+                      >
+                        <span className={styles.flowStepMark} aria-hidden>
+                          {done ? "✓" : step.n}
+                        </span>
+                        <span className={styles.flowStepLabel}>{step.label}</span>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </nav>
+            ) : null}
             <div className={styles.dashboardTabs}>
               <button type="button" className={`${styles.dashboardTab} ${dashboardTab === "overview" ? styles.dashboardTabActive : ""}`} onClick={() => setDashboardTab("overview")}>
                 Overview
@@ -1342,26 +1400,38 @@ export function QuizExperience() {
               </>
             ) : null}
 
-            {dashboardTab === "openings" ? <div className={styles.recommendationGrid}>
-              <ResultCard
-                label="White"
-                opening={activeDashboard.repertoire.white}
-                dark={false}
-                onTrain={() => beginTrack("white")}
-              />
-              <ResultCard
-                label="Black vs 1.e4"
-                opening={activeDashboard.repertoire.blackE4}
-                dark
-                onTrain={() => beginTrack("black-e4")}
-              />
-              <ResultCard
-                label="Black vs 1.d4"
-                opening={activeDashboard.repertoire.blackD4}
-                dark
-                onTrain={() => beginTrack("black-d4")}
-              />
-            </div> : null}
+            {dashboardTab === "openings" ? (
+              <div id="openings-showcase" className={styles.openingsShowcase}>
+                <header className={styles.openingsShowcaseHeader}>
+                  <p className={styles.eyebrow}>Your three lines</p>
+                  <h3 className={styles.openingsShowcaseTitle}>Why these openings fit you</h3>
+                  <p className={styles.trainingIntro}>
+                    Knightora ranked these systems from your quiz (and Chess.com stats when provided). Read the rationale, then open
+                    the lesson path for the one you want to install first—you can train all three over time.
+                  </p>
+                </header>
+                <div className={styles.recommendationGrid}>
+                  <ResultCard
+                    label="White"
+                    opening={activeDashboard.repertoire.white}
+                    dark={false}
+                    onTrain={() => beginTrack("white")}
+                  />
+                  <ResultCard
+                    label="Black vs 1.e4"
+                    opening={activeDashboard.repertoire.blackE4}
+                    dark
+                    onTrain={() => beginTrack("black-e4")}
+                  />
+                  <ResultCard
+                    label="Black vs 1.d4"
+                    opening={activeDashboard.repertoire.blackD4}
+                    dark
+                    onTrain={() => beginTrack("black-d4")}
+                  />
+                </div>
+              </div>
+            ) : null}
 
             {dashboardTab === "openings" ? <section className={styles.trainingPanel}>
               <div className={styles.trainingHeader}>
@@ -1388,7 +1458,8 @@ export function QuizExperience() {
                       <p className={styles.eyebrow}>Training</p>
                       <h3>Pick an opening</h3>
                       <p className={styles.trainingIntro}>
-                        Three paths (White, vs 1.e4, vs 1.d4) — switch anytime. Tap an opening to open its lesson map, or use the tabs inside a course.
+                        Choose <strong>one</strong> opening to focus now (White, vs 1.e4, or vs 1.d4). You will see context, a line primer,
+                        branch choice, then chapter drills—switch paths anytime from the tabs inside a course.
                       </p>
                     </div>
                     <div className={styles.trainingStats}>
@@ -1983,16 +2054,20 @@ function ResultCard({
     <article className={styles.resultCard}>
       <span className={`${styles.pieceTag} ${dark ? styles.pieceTagDark : ""}`}>{label}</span>
       <h3>{opening.name}</h3>
-      <p>{opening.summary}</p>
-      <p>
-        <strong>{opening.confidence}%</strong> match · {opening.why}
+      <p className={styles.resultCardLead}>{opening.summary}</p>
+      <p className={styles.resultCardMeta}>
+        <strong>{opening.confidence}%</strong> match to your profile
       </p>
-      <ul>
+      <p className={styles.resultCardSectionTitle}>Why it is viable</p>
+      <p className={styles.resultCardWhy}>{opening.why}</p>
+      <p className={styles.resultCardSectionTitle}>Signals we used</p>
+      <ul className={styles.resultCardList}>
         {opening.evidence.map((item) => (
           <li key={item}>{item}</li>
         ))}
       </ul>
-      <ul>
+      <p className={styles.resultCardSectionTitle}>Study this first</p>
+      <ul className={styles.resultCardList}>
         {opening.study.map((item) => (
           <li key={item}>{item}</li>
         ))}
