@@ -1,10 +1,17 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
 import { auth } from "@clerk/nextjs/server";
 import { getSessionAccount, getSessionCookieName } from "@/lib/account-store";
 import type { SubscriptionPlan } from "@/lib/subscription";
 import { resolveClerkKnightoraAccount } from "@/lib/clerk-account";
-import { getPriceIdForPlan, getStripeClient, isBillablePlan, type BillingInterval } from "@/lib/billing";
+import {
+  getPriceIdForPlan,
+  getStripeClient,
+  isBillablePlan,
+  listConfiguredPriceIds,
+  type BillingInterval,
+} from "@/lib/billing";
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,7 +39,15 @@ export async function POST(request: NextRequest) {
 
     const priceId = getPriceIdForPlan(plan, interval);
     if (!priceId) {
-      return NextResponse.json({ error: `No Stripe price is configured for ${plan}.` }, { status: 500 });
+      const hint =
+        interval === "year"
+          ? "Set STRIPE_PRICE_PAID_YEARLY or STRIPE_PRICE_YEARLY (or STRIPE_YEARLY_PRICE_ID) in the server environment."
+          : "Set STRIPE_PRICE_PAID_MONTHLY, STRIPE_PRICE_STARTER, STRIPE_PRICE_MONTHLY, or STRIPE_PRICE_ID.";
+      return NextResponse.json({ error: `No Stripe price ID for ${interval}ly billing. ${hint}` }, { status: 500 });
+    }
+
+    if (!listConfiguredPriceIds().includes(priceId)) {
+      return NextResponse.json({ error: "Resolved price ID is not in the configured allowlist." }, { status: 500 });
     }
 
     const stripe = getStripeClient();
@@ -43,6 +58,7 @@ export async function POST(request: NextRequest) {
       success_url: `${origin}/quiz?billing=success`,
       cancel_url: `${origin}/quiz?billing=cancel`,
       customer_email: account.user.email,
+      client_reference_id: account.user.id,
       metadata: {
         userId: account.user.id,
         plan,
@@ -59,6 +75,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ url: checkout.url }, { status: 200 });
   } catch (error) {
+    if (error instanceof Stripe.errors.StripeError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     const message = error instanceof Error ? error.message : "Unable to start checkout.";
     return NextResponse.json({ error: message }, { status: 400 });
   }

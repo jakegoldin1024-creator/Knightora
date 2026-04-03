@@ -12,15 +12,45 @@ export function isBillablePlan(plan: SubscriptionPlan) {
 export function getPriceIdForPlan(plan: SubscriptionPlan, interval: BillingInterval = "month"): string | null {
   if (plan !== "paid") return null;
   if (interval === "year") {
-    return process.env.STRIPE_PRICE_PAID_YEARLY ?? process.env.STRIPE_PRICE_YEARLY ?? null;
+    return (
+      process.env.STRIPE_PRICE_PAID_YEARLY ??
+      process.env.STRIPE_PRICE_YEARLY ??
+      process.env.STRIPE_PRICE_PAID_ANNUAL ??
+      process.env.STRIPE_PRICE_ANNUAL ??
+      process.env.STRIPE_YEARLY_PRICE_ID ??
+      null
+    );
   }
-  return process.env.STRIPE_PRICE_PAID_MONTHLY ?? process.env.STRIPE_PRICE_STARTER ?? null;
+  return (
+    process.env.STRIPE_PRICE_PAID_MONTHLY ??
+    process.env.STRIPE_PRICE_STARTER ??
+    process.env.STRIPE_PRICE_MONTHLY ??
+    process.env.STRIPE_PRICE_ID ??
+    process.env.STRIPE_MONTHLY_PRICE_ID ??
+    null
+  );
+}
+
+/** Every env var that can map to a subscription price (for webhook + checkout validation). */
+export function listConfiguredPriceIds(): string[] {
+  const keys = [
+    "STRIPE_PRICE_PAID_MONTHLY",
+    "STRIPE_PRICE_STARTER",
+    "STRIPE_PRICE_MONTHLY",
+    "STRIPE_PRICE_ID",
+    "STRIPE_MONTHLY_PRICE_ID",
+    "STRIPE_PRICE_PAID_YEARLY",
+    "STRIPE_PRICE_YEARLY",
+    "STRIPE_PRICE_PAID_ANNUAL",
+    "STRIPE_PRICE_ANNUAL",
+    "STRIPE_YEARLY_PRICE_ID",
+  ] as const;
+  return keys.map((k) => process.env[k]).filter((v): v is string => Boolean(v));
 }
 
 export function getPlanForPriceId(priceId: string): SubscriptionPlan | null {
-  const month = process.env.STRIPE_PRICE_PAID_MONTHLY ?? process.env.STRIPE_PRICE_STARTER;
-  const year = process.env.STRIPE_PRICE_PAID_YEARLY ?? process.env.STRIPE_PRICE_YEARLY;
-  if (priceId && (priceId === month || priceId === year)) return "paid";
+  if (!priceId) return null;
+  if (listConfiguredPriceIds().includes(priceId)) return "paid";
   return null;
 }
 

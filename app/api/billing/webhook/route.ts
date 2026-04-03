@@ -59,13 +59,13 @@ export async function POST(request: NextRequest) {
   try {
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
-      const userId = session.metadata?.userId;
+      const userId = session.metadata?.userId ?? session.client_reference_id ?? undefined;
       const clerkUserId = session.metadata?.clerkUserId ?? undefined;
-      const plan = session.metadata?.plan;
-      if (
-        userId &&
-        (plan === "paid" || plan === "starter" || plan === "club" || plan === "pro")
-      ) {
+      const metaPlan = session.metadata?.plan;
+      const paidMeta =
+        metaPlan === "paid" || metaPlan === "starter" || metaPlan === "club" || metaPlan === "pro";
+      const subscriptionOk = session.mode === "subscription" && session.payment_status === "paid";
+      if (userId && (paidMeta || (subscriptionOk && !metaPlan))) {
         await applySubscriptionPlan(userId, clerkUserId, "paid");
       }
     }
