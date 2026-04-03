@@ -6,10 +6,10 @@ import { getSessionAccount, getSessionCookieName } from "@/lib/account-store";
 import type { SubscriptionPlan } from "@/lib/subscription";
 import { resolveClerkKnightoraAccount } from "@/lib/clerk-account";
 import {
+  billingPriceEnvHint,
   getPriceIdForPlan,
   getStripeClient,
   isBillablePlan,
-  listConfiguredPriceIds,
   type BillingInterval,
 } from "@/lib/billing";
 
@@ -39,15 +39,10 @@ export async function POST(request: NextRequest) {
 
     const priceId = getPriceIdForPlan(plan, interval);
     if (!priceId) {
-      const hint =
-        interval === "year"
-          ? "Set STRIPE_PRICE_PAID_YEARLY or STRIPE_PRICE_YEARLY (or STRIPE_YEARLY_PRICE_ID) in the server environment."
-          : "Set STRIPE_PRICE_PAID_MONTHLY, STRIPE_PRICE_STARTER, STRIPE_PRICE_MONTHLY, or STRIPE_PRICE_ID.";
-      return NextResponse.json({ error: `No Stripe price ID for ${interval}ly billing. ${hint}` }, { status: 500 });
-    }
-
-    if (!listConfiguredPriceIds().includes(priceId)) {
-      return NextResponse.json({ error: "Resolved price ID is not in the configured allowlist." }, { status: 500 });
+      return NextResponse.json(
+        { error: `No Stripe price ID for ${interval}ly billing. ${billingPriceEnvHint(interval)} Also ensure STRIPE_SECRET_KEY is set.` },
+        { status: 500 },
+      );
     }
 
     const stripe = getStripeClient();
