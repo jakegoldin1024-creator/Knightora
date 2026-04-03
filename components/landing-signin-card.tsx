@@ -11,8 +11,8 @@ export function LandingSignInCard() {
     <section className={styles.signInSection}>
       <div className={styles.panel}>
         <p className={styles.eyebrow}>Account</p>
-        <h3 className={styles.signInTitle}>Sign in to Knightora</h3>
-        <p className={styles.signInCopy}>Save your training path, streaks, and progress across devices.</p>
+        <h3 className={styles.signInTitle}>Welcome back</h3>
+        <p className={styles.signInCopy}>One account keeps your quiz, openings, and streaks synced—phone, laptop, wherever you train.</p>
         <div className={styles.signInEmbed}>
           <SignIn
             routing="hash"
@@ -21,7 +21,12 @@ export function LandingSignInCard() {
             oauthFlow="redirect"
             appearance={{
               variables: {
-                colorPrimary: "#1e1d1a",
+                colorPrimary: "#ff6b5c",
+                colorBackground: "#151722",
+                colorText: "#f2f0f8",
+                colorTextSecondary: "#9a95ab",
+                colorInputBackground: "#1c1f2a",
+                colorNeutral: "#2a2e3d",
                 borderRadius: "12px",
               },
             }}

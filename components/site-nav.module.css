@@ -1,10 +1,16 @@
 .nav {
   width: min(1180px, calc(100% - 32px));
-  margin: 0 auto;
-  padding: 18px 0;
+  margin: 16px auto 12px;
+  padding: 14px 18px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.25);
 }
 
 .brand {
@@ -21,8 +27,8 @@
   display: grid;
   place-items: center;
   border-radius: 10px;
-  background: var(--brand);
-  color: #fff;
+  background: var(--primary-gradient);
+  color: var(--on-primary);
 }
 
 .links {
@@ -47,8 +53,9 @@
 .cta {
   text-decoration: none;
   border-radius: 999px;
-  background: var(--text);
-  color: #fff;
+  background: var(--primary-gradient);
+  color: var(--on-primary);
   padding: 10px 14px;
   font-weight: 700;
+  box-shadow: 0 6px 20px rgba(255, 107, 92, 0.2);
 }

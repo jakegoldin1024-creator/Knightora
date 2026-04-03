@@ -29,7 +29,10 @@ export function AnalysisPage() {
       <SiteNav active="analysis" />
       <main className={styles.shell}>
         <section className={styles.hero}>
-          <p className={styles.lede}>Analyze your games in a dedicated workspace without interrupting your lesson and variation flow.</p>
+          <p className={styles.lede}>
+            Bring a full game here when you’re ready to zoom out—no jumping out of your lesson flow. Subscribers get practical notes, not just engine
+            noise.
+          </p>
         </section>
         <GameAnalysisPanel selectedPlan={plan} />
       </main>

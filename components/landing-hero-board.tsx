@@ -1,13 +1,18 @@
+import Image from "next/image";
 import { Chess } from "chess.js";
 import styles from "./landing-hero-board.module.css";
 
-/** Unicode chess symbols; font stack falls back to glyphs that render filled pieces. */
-const GLYPH: Record<"w" | "b", Record<string, string>> = {
-  w: { p: "\u2659", n: "\u2658", b: "\u2657", r: "\u2656", q: "\u2655", k: "\u2654" },
-  b: { p: "\u265f", n: "\u265e", b: "\u265d", r: "\u265c", q: "\u265b", k: "\u265a" },
-};
+const NEO_PIECE_BASE = "https://lichess1.org/assets/piece/neo";
 
-/** Decorative 8×8 starting position — not interactive. Grid row 1 = rank 8 (top). */
+const PIECE_FILES: Record<string, string> = { p: "P", n: "N", b: "B", r: "R", q: "Q", k: "K" };
+
+function neoPieceSrc(color: "w" | "b", type: string): string {
+  const prefix = color === "w" ? "w" : "b";
+  const letter = PIECE_FILES[type] ?? "P";
+  return `${NEO_PIECE_BASE}/${prefix}${letter}.svg`;
+}
+
+/** Decorative 8×8 starting position — Lichess Neo pieces, not interactive. */
 export function LandingHeroBoard() {
   const chess = new Chess();
   const board = chess.board();
@@ -28,15 +33,18 @@ export function LandingHeroBoard() {
         {board.map((row, ri) =>
           row.map((square, ci) => {
             if (!square) return null;
-            const glyph = GLYPH[square.color][square.type];
             return (
-              <span
-                key={`${ri}-${ci}`}
-                className={`${styles.piece} ${square.color === "w" ? styles.pieceWhite : styles.pieceBlack}`}
-                style={{ gridColumn: ci + 1, gridRow: ri + 1 }}
-              >
-                {glyph}
-              </span>
+              <div key={`${ri}-${ci}`} className={styles.pieceCell} style={{ gridColumn: ci + 1, gridRow: ri + 1 }}>
+                <Image
+                  src={neoPieceSrc(square.color, square.type)}
+                  alt=""
+                  className={styles.pieceImg}
+                  width={64}
+                  height={64}
+                  unoptimized
+                  loading="lazy"
+                />
+              </div>
             );
           }),
         )}

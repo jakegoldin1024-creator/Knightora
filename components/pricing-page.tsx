@@ -85,31 +85,6 @@ export function PricingPage() {
             </tbody>
           </table>
         </section>
-
-        <section className={styles.faq}>
-          <h3>FAQ</h3>
-          <details>
-            <summary>What do I get on Free?</summary>
-            <p>You can browse the site and read pricing. The quiz, training, and analysis tools require an active subscription.</p>
-          </details>
-          <details>
-            <summary>Monthly vs yearly?</summary>
-            <p>
-              $9.99/month billed monthly, or $99.99/year (save vs twelve monthly payments). Same product access — pick what fits your budget.
-            </p>
-          </details>
-          <details>
-            <summary>What does “practical move” mean in game analysis?</summary>
-            <p>
-              Alongside engine-best options, Knightora highlights alternatives that are easier to find and execute at your selected level while staying
-              close in evaluation.
-            </p>
-          </details>
-          <details>
-            <summary>Do I need to memorize every line to improve?</summary>
-            <p>No. The platform emphasizes recurring structures, plans, and high-frequency deviations before rare memorization.</p>
-          </details>
-        </section>
       </main>
     </>
   );

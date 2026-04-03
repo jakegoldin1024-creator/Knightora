@@ -6,7 +6,7 @@ export default function Page() {
       style={{
         minHeight: "100dvh",
         width: "100%",
-        background: "#f7f4ee",
+        background: "transparent",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -23,15 +23,15 @@ export default function Page() {
           alignItems: "center",
         }}
       >
-        <p style={{ fontSize: "12px", letterSpacing: "0.2em", textTransform: "uppercase", color: "#737373", marginBottom: "12px" }}>
+        <p style={{ fontSize: "12px", letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--muted)", marginBottom: "12px" }}>
           Knightora Account
         </p>
 
-        <h1 style={{ fontSize: "48px", fontWeight: 600, color: "#171717", margin: "0 0 16px 0", lineHeight: 1.1 }}>
+        <h1 style={{ fontSize: "48px", fontWeight: 600, color: "var(--text)", margin: "0 0 16px 0", lineHeight: 1.1 }}>
           Sign in to Knightora
         </h1>
 
-        <p style={{ color: "#525252", fontSize: "18px", margin: "0 0 32px 0" }}>
+        <p style={{ color: "var(--muted)", fontSize: "18px", margin: "0 0 32px 0" }}>
           Save your repertoire, track progress, and train smarter.
         </p>
 
@@ -48,7 +48,12 @@ export default function Page() {
                 card: "mx-auto",
               },
               variables: {
-                colorPrimary: "#2f2f2f",
+                colorPrimary: "#ff6b5c",
+                colorBackground: "#151722",
+                colorText: "#f2f0f8",
+                colorTextSecondary: "#9a95ab",
+                colorInputBackground: "#1c1f2a",
+                colorNeutral: "#2a2e3d",
                 borderRadius: "14px",
               },
             }}

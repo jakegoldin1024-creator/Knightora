@@ -157,8 +157,11 @@ export function GameAnalysisPanel({ selectedPlan }: { selectedPlan: Subscription
     <section className={styles.panel}>
       <div className={styles.header}>
         <p className={styles.eyebrow}>Game coach</p>
-        <h1 className={styles.title}>Full-game human-level analysis</h1>
-        <p className={styles.intro}>Import a full game and get practical coaching for opening, middlegame, and endgame decisions.</p>
+        <h1 className={styles.title}>Your game, explained in plain language</h1>
+        <p className={styles.intro}>
+          Paste a PGN or drop a public Chess.com / Lichess link. We’ll walk the opening, middlegame, and crunch moments with you—like a coach who
+          actually knows your level.
+        </p>
       </div>
 
       <div className={styles.toolbar}>

@@ -12,10 +12,11 @@ export function LandingPage() {
         <section className={styles.hero}>
           <div className={styles.panel}>
             <p className={styles.eyebrow}>Opening prep</p>
-            <h1 className={styles.title}>Turn prep into pressure.</h1>
-            <p className={styles.onboardingNotice}>Step 1: Sign in so your lines and progress save.</p>
+            <h1 className={styles.title}>Prep that shows up in your games.</h1>
+            <p className={styles.onboardingNotice}>Sign in once—your quiz, lines, and streaks follow you.</p>
             <p className={styles.lede}>
-              Board drills on real positions. One subscription unlocks every branch, Stockfish on lessons, and full-game analysis.
+              You’re not reading PDFs—you’re tapping real positions, walking main ideas, and (with a sub) leaning on Stockfish and full-game coaching
+              when it counts.
             </p>
             <div className={styles.actions}>
               <Link className={styles.btn} href="/sign-in">
@@ -37,9 +38,9 @@ export function LandingPage() {
             <aside className={styles.panelMuted}>
               <p className={styles.eyebrow}>On the board</p>
               <ul className={styles.listTight}>
-                <li>Main-line drills free · deeper branches with sub</li>
-                <li>Quiz → repertoire → chapter lessons</li>
-                <li>PGN coach summaries when subscribed</li>
+                <li>Main-line spine free—go deeper with a subscription</li>
+                <li>Quiz → your three lines → pick one → real drills</li>
+                <li>Subscribers: PGN / URL analysis + coach-style notes</li>
               </ul>
             </aside>
           </div>
@@ -49,7 +50,7 @@ export function LandingPage() {
           <div className={styles.panel}>
             <p className={styles.eyebrow}>How it works</p>
             <h2 id="how-heading" className={styles.sectionTitle}>
-              From quiz to a repertoire you actually play
+              How you’ll go from “I don’t know what to play” to a line you trust
             </h2>
             <ol className={styles.steps}>
               <li>

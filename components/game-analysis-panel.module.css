@@ -3,8 +3,11 @@
   gap: 16px;
   padding: 24px;
   border-radius: 24px;
-  border: 1px solid rgba(30, 29, 26, 0.12);
-  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid var(--border);
+  background: var(--panel);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--shadow);
 }
 
 .header {
@@ -18,17 +21,18 @@
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #8f3b2e;
+  color: var(--brand);
 }
 
 .title {
   margin: 0;
   font-size: 1.35rem;
+  color: var(--text);
 }
 
 .intro {
   margin: 0;
-  color: rgba(30, 29, 26, 0.78);
+  color: var(--muted);
   line-height: 1.6;
 }
 
@@ -40,29 +44,31 @@
 }
 
 .button {
-  border: 1px solid rgba(30, 29, 26, 0.14);
+  border: 1px solid var(--border);
   border-radius: 999px;
   padding: 10px 14px;
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--surface-input);
   cursor: pointer;
   font-weight: 700;
+  color: var(--text);
 }
 
 .buttonPrimary {
-  background: linear-gradient(135deg, #8f3b2e, #d08f3d);
-  color: #fff;
+  background: var(--primary-gradient);
+  color: var(--on-primary);
   border-color: transparent;
+  box-shadow: 0 8px 24px rgba(255, 107, 92, 0.22);
 }
 
 .selectInput,
 .analysisTextarea,
 .analysisUrlInput {
   width: 100%;
-  border: 1px solid rgba(30, 29, 26, 0.16);
+  border: 1px solid var(--border);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--surface-input);
   padding: 10px 12px;
-  color: rgba(30, 29, 26, 0.9);
+  color: var(--text);
 }
 
 .selectInput {
@@ -77,13 +83,13 @@
 
 .status {
   margin: 0;
-  color: rgba(30, 29, 26, 0.75);
+  color: var(--muted);
   font-size: 0.9rem;
 }
 
 .error {
   margin: 0;
-  color: #8f3b2e;
+  color: var(--brand);
   font-weight: 700;
 }
 
@@ -101,8 +107,8 @@
 .card {
   padding: 14px;
   border-radius: 14px;
-  border: 1px solid rgba(30, 29, 26, 0.12);
-  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid var(--border);
+  background: var(--surface-nested);
 }
 
 .cardLabel {
@@ -111,18 +117,20 @@
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #8f3b2e;
+  color: var(--brand);
 }
 
 .list {
   margin: 8px 0 0;
   padding-left: 18px;
   line-height: 1.55;
+  color: var(--muted);
 }
 
 .details summary {
   cursor: pointer;
   font-weight: 700;
+  color: var(--text);
 }
 
 @media (max-width: 900px) {

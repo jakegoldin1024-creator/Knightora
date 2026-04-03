@@ -18,11 +18,13 @@
 }
 
 .panelMuted {
-  background: rgba(255, 255, 255, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.65);
+  background: var(--surface-nested);
+  border: 1px solid var(--border);
   border-radius: 20px;
   box-shadow: var(--shadow);
   padding: 18px 20px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 .listTight {
@@ -39,10 +41,12 @@
 
 .panel {
   background: var(--panel);
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--border);
   border-radius: 28px;
   box-shadow: var(--shadow);
   padding: 28px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
 .eyebrow {
@@ -55,7 +59,7 @@
 }
 
 .title {
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-display), var(--font-sans), system-ui, sans-serif;
   font-size: clamp(2.8rem, 6vw, 5.4rem);
   margin: 0 0 14px;
   line-height: 1.02;
@@ -71,8 +75,8 @@
   margin: 0 0 12px;
   padding: 10px 12px;
   border-radius: 12px;
-  border: 1px solid rgba(143, 59, 46, 0.25);
-  background: rgba(143, 59, 46, 0.08);
+  border: 1px solid rgba(255, 107, 92, 0.35);
+  background: var(--brand-soft);
   color: var(--text);
   font-weight: 600;
 }
@@ -93,13 +97,15 @@
 }
 
 .btn {
-  background: var(--text);
-  color: #fff;
+  background: var(--primary-gradient);
+  color: var(--on-primary);
+  box-shadow: 0 8px 28px rgba(255, 107, 92, 0.22);
 }
 
 .btnAlt {
   border: 1px solid var(--border);
   color: var(--text);
+  background: var(--surface-input);
 }
 
 .list {
@@ -121,7 +127,7 @@
 }
 
 .sectionTitle {
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-display), var(--font-sans), system-ui, sans-serif;
   font-size: clamp(1.45rem, 3vw, 2rem);
   margin: 0 0 18px;
   line-height: 1.2;
@@ -179,10 +185,12 @@
 
 .featureLinks li {
   background: var(--panel);
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--border);
   border-radius: 20px;
   box-shadow: var(--shadow);
   padding: 18px 20px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 .featureLinks a {

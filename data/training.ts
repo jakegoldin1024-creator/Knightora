@@ -9,6 +9,7 @@ import {
   PRO_EXTRA_LINE_MOVES,
   STARTER_EXTRA_LINE_MOVES,
 } from "@/data/opening-line-sequences";
+import { OPENING_TRAINING_VOICE } from "@/lib/opening-training-voice";
 
 export type TrainingLesson = {
   id: string;
@@ -843,7 +844,7 @@ export function getTrainingTrack(openingKey: string): TrainingTrack {
           prompt: "What should you learn first in a new opening?",
           choices: ["Core setup and plans", "Every rare sideline", "Only traps"],
           answer: "Core setup and plans",
-          explanation: "Knightora keeps openings manageable by starting with the recurring structure and ideas.",
+          explanation: "Start with the recurring structure and ideas—you’ll recognize the middlegames much faster than if you chase every trap.",
         },
       ],
     };
@@ -874,7 +875,7 @@ export function getTrainingTrack(openingKey: string): TrainingTrack {
         prompt: `When you review ${openingKey}, what should come before rare sidelines?`,
         choices: [baseTrack.modules[0], "Random traps", "Engine-only memorization"],
         answer: baseTrack.modules[0],
-        explanation: `Knightora keeps ${openingKey} practical by prioritizing ${baseTrack.modules[0].toLowerCase()} first.`,
+        explanation: `Prioritize ${baseTrack.modules[0].toLowerCase()} first—you’ll feel less lost when the board gets sharp.`,
         minPlan: "free" as const,
       },
       {
@@ -895,19 +896,21 @@ export function getTrainingTrack(openingKey: string): TrainingTrack {
 }
 
 function buildTrackIntro(openingKey: string, modules: string[]): TrainingTrackIntro {
+  const voiced = OPENING_TRAINING_VOICE[openingKey]?.intro;
+  if (voiced) return voiced;
   const openingLabel = openingKey.toUpperCase();
   const moduleA = modules[0] ?? "Core setup";
   const moduleB = modules[1] ?? "Typical plans";
   return {
-    whyThisOpening: `${openingLabel}: a clear ${moduleA.toLowerCase()} → ${moduleB.toLowerCase()} story you can replay in games.`,
-    history: `${openingLabel} has stayed sound from classical play through online and engine prep—ideas update, the structures stay practical.`,
-    viability: "Your quiz answers point here when you want repeatable plans and clean development more than one-off tricks.",
+    whyThisOpening: `Here you’ll build a clear ${moduleA.toLowerCase()} → ${moduleB.toLowerCase()} story you can actually replay in your own games.`,
+    history: `${openingLabel} has stayed sound from classical play through online and engine prep—ideas refresh, but the pawn structures stay practical.`,
+    viability: "Your quiz pointed here because you said you want repeatable plans and clean development more than one-off tricks.",
   };
 }
 
 function buildTrackVariations(openingKey: string): TrainingVariation[] {
   const openingLabel = openingKey.toUpperCase();
-  return [
+  const base: TrainingVariation[] = [
     {
       id: "foundation",
       label: "Foundation branch",
@@ -965,17 +968,25 @@ function buildTrackVariations(openingKey: string): TrainingVariation[] {
       commonMistakes: ["Forgetting transposition move-orders", "Playing too fast in critical forcing positions"],
     },
   ];
+
+  const patches = OPENING_TRAINING_VOICE[openingKey]?.branches;
+  if (!patches) return base;
+
+  return base.map((v) => {
+    const p = patches[v.id as keyof typeof patches];
+    if (!p) return v;
+    return {
+      ...v,
+      ...p,
+      middlegamePlans: p.middlegamePlans ?? v.middlegamePlans,
+      commonMistakes: p.commonMistakes ?? v.commonMistakes,
+    };
+  });
 }
 
 function buildTierStepHints(openingKey: string, tier: "starter" | "club" | "pro", moves: string[]): string[] {
-  const tierPrefix =
-    tier === "starter"
-      ? "Starter cue"
-      : tier === "club"
-        ? "Club cue"
-        : "Pro cue";
-  const openingLabel = openingKey.toUpperCase();
-  return moves.map((san, idx) => `${tierPrefix} (${openingLabel}): ${buildHintFromSan(san, idx)}`);
+  const tierLabel = tier === "starter" ? "Starter focus" : tier === "club" ? "Club focus" : "Pro focus";
+  return moves.map((san, idx) => `${tierLabel}: ${buildHintFromSan(san, idx)}`);
 }
 
 function buildDeviationStepHints(title: string, plan: string, moves: string[]): string[] {
@@ -988,19 +999,19 @@ function buildDeviationStepHints(title: string, plan: string, moves: string[]): 
 }
 
 function buildHintFromSan(san: string, idx: number): string {
-  const side = idx % 2 === 0 ? "White" : "Black";
-  if (san.startsWith("O-O-O")) return `${side} castles long and commits to opposite-wing play.`;
-  if (san.startsWith("O-O")) return `${side} castles, improving king safety and rook activity.`;
-  if (san.includes("=")) return `${side} promotes and converts the pawn into concrete force.`;
-  if (san.includes("#")) return `${side} ends the game with checkmate.`;
-  if (san.includes("+")) return `${side} gives check and forces a concrete reply.`;
-  if (san.includes("x")) return `${side} captures to shift material or structure in their favor.`;
-  if (/^[N]/.test(san)) return `${side} develops a knight toward central control and tactics.`;
-  if (/^[B]/.test(san)) return `${side} improves bishop scope and diagonal pressure.`;
-  if (/^[R]/.test(san)) return `${side} activates a rook toward open files and coordination.`;
-  if (/^[Q]/.test(san)) return `${side} repositions the queen to support key squares and threats.`;
-  if (/^[K]/.test(san)) return `${side} improves king placement for safety or endgame activity.`;
-  return `${side} reinforces structure and prepares the next plan step.`;
+  const you = idx % 2 === 0 ? "you’re playing this as White" : "you’re playing this as Black";
+  if (san.startsWith("O-O-O")) return `Castle long—${you}, expect opposite-wing tension if both sides rush.`;
+  if (san.startsWith("O-O")) return `Castle short: king safety up, rooks ready to join the fight.`;
+  if (san.includes("=")) return `Promotion—cash the passer into a piece that decides the fight.`;
+  if (san.includes("#")) return `Mate on the board—pattern recognition paid off.`;
+  if (san.includes("+")) return `Check: force a reply you’ve thought one move past.`;
+  if (san.includes("x")) return `Capture: change the pawn landscape or grab a key defender.`;
+  if (/^[N]/.test(san)) return `Knight jump—fight for central squares and tactical forks.`;
+  if (/^[B]/.test(san)) return `Bishop lift—open a diagonal that matters for your next break.`;
+  if (/^[R]/.test(san)) return `Rook move—claim a file before your opponent seals it.`;
+  if (/^[Q]/.test(san)) return `Queen step—improve without letting it get harassed for free.`;
+  if (/^[K]/.test(san)) return `King step—often about safety now, activity later.`;
+  return `Small improvement—set up the pawn break you actually want next.`;
 }
 
 function buildEndgameMicroLessons(openingKey: string): TrainingLesson[] {

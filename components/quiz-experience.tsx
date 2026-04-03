@@ -1284,7 +1284,7 @@ export function QuizExperience() {
           <section id="dashboard" className={styles.panel}>
             <div className={styles.sectionHeading}>
               <p className={styles.eyebrow}>Dashboard</p>
-              <h2>Your saved repertoire, studies, and review queue</h2>
+              <h2>Your corner of the repertoire—saved, synced, ready when you are</h2>
             </div>
             {prepFlowStep > 0 ? (
               <nav className={styles.flowRibbon} aria-label="Prep journey">
@@ -1709,16 +1709,16 @@ export function QuizExperience() {
                             <span className={styles.lessonTag}>{activeTrack.label}</span>
                             <span className={styles.lessonTagMuted}>{activeTrack.opening.name}</span>
                           </div>
-                          <h4 className={styles.lessonTitle}>Why this opening?</h4>
+                          <h4 className={styles.lessonTitle}>Why you’re studying this now</h4>
                           <p className={styles.introLede}>{activeTrack.intro?.whyThisOpening ?? activeTrack.headline}</p>
                           <details className={styles.openingIntroDetails}>
-                            <summary>More context</summary>
+                            <summary>Go deeper</summary>
                             <div className={styles.openingIntroBlock}>
-                              <h5>History</h5>
+                              <h5>Where it comes from</h5>
                               <p>{activeTrack.intro?.history ?? `${activeTrack.opening.name} stays viable across eras of prep.`}</p>
                             </div>
                             <div className={styles.openingIntroBlock}>
-                              <h5>Your profile</h5>
+                              <h5>Why it fits you</h5>
                               <p>{activeTrack.intro?.viability}</p>
                               {recommendationReasons.length ? (
                                 <ul className={styles.openingReasonList}>
@@ -1731,7 +1731,7 @@ export function QuizExperience() {
                           </details>
                           <div className={styles.lessonCompleteActions}>
                             <button type="button" className={`${styles.button} ${styles.buttonPrimary}`} onClick={continueToLinePrimer}>
-                              See line options
+                              Next: how you’ll play it
                             </button>
                           </div>
                         </div>
@@ -1741,8 +1741,11 @@ export function QuizExperience() {
                             <span className={styles.lessonTag}>Line fundamentals</span>
                             <span className={styles.lessonTagMuted}>{activeTrack.opening.name}</span>
                           </div>
-                          <h4 className={styles.lessonTitle}>Pick a line style</h4>
-                          <p className={styles.lessonPrompt}>Each card is a different way to play—open one for plans and sample ideas.</p>
+                          <h4 className={styles.lessonTitle}>Four ways into the same opening</h4>
+                          <p className={styles.lessonPrompt}>
+                            Open a card and read slowly—these aren’t trivia blurbs. You’re choosing the personality of your prep: calm, balanced,
+                            sharp, or max depth.
+                          </p>
                           <div className={styles.variationGrid}>
                             {(activeTrack.variations ?? []).map((variation) => (
                               <details key={`primer-${variation.id}`} className={styles.variationPrimerCard}>
@@ -1768,7 +1771,7 @@ export function QuizExperience() {
                           </div>
                           <div className={styles.lessonCompleteActions}>
                             <button type="button" className={`${styles.button} ${styles.buttonPrimary}`} onClick={continueToVariationSelection}>
-                              Continue to variation selection
+                              Lock in a branch
                             </button>
                           </div>
                         </div>
@@ -1778,10 +1781,10 @@ export function QuizExperience() {
                             <span className={styles.lessonTag}>Variation choice</span>
                             <span className={styles.lessonTagMuted}>{activeTrack.opening.name}</span>
                           </div>
-                          <h4 className={styles.lessonTitle}>Choose how you want to play this opening</h4>
+                          <h4 className={styles.lessonTitle}>Pick the branch you’ll actually drill</h4>
                           {recommendedVariation ? (
                             <div className={styles.variationRecommended}>
-                              <p className={styles.statusTitle}>Recommended first</p>
+                              <p className={styles.statusTitle}>We’d start you here</p>
                               <h5>{recommendedVariation.label}</h5>
                               <p>{recommendedVariation.summary}</p>
                               {recommendationReasons.length ? (
@@ -2606,10 +2609,10 @@ function recommendVariation(variations: TrainingVariation[], profile: QuizProfil
 function buildRecommendationReasons(profile: QuizProfile, variation: TrainingVariation | null): string[] {
   if (!variation) return [];
   const reasons: string[] = [];
-  reasons.push(`Risk preference (${profile.risk}) aligns with ${variation.risk}-risk plans.`);
-  reasons.push(`Theory preference (${profile.theory}) fits this ${variation.theoryLoad}-theory branch.`);
-  reasons.push(`Time control focus (${profile.timeControl}) matches the branch tempo: ${variation.tempo}`);
-  reasons.push(`Goal (${profile.goal}) maps well to this ${variation.style} style.`);
+  reasons.push(`You told us you gravitate toward ${profile.risk} risk—that matches this ${variation.risk}-risk branch.`);
+  reasons.push(`Your theory comfort (${profile.theory}) fits the ${variation.theoryLoad} load you’ll see here.`);
+  reasons.push(`You usually play ${profile.timeControl}; this line’s tempo (${variation.tempo}) should feel familiar.`);
+  reasons.push(`Your goal (${profile.goal}) pairs well with this ${variation.style} style of fight.`);
   return reasons.slice(0, 3);
 }
 
