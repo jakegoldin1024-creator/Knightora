@@ -1,6 +1,7 @@
 "use client";
 
 import { SignIn, useAuth } from "@clerk/nextjs";
+import { clerkAuthAppearance } from "@/lib/clerk-auth-appearance";
 import styles from "./landing-page.module.css";
 
 export function LandingSignInCard() {
@@ -19,17 +20,7 @@ export function LandingSignInCard() {
             signUpUrl="/sign-up"
             fallbackRedirectUrl="/"
             oauthFlow="redirect"
-            appearance={{
-              variables: {
-                colorPrimary: "#ff6b5c",
-                colorBackground: "#151722",
-                colorText: "#f2f0f8",
-                colorTextSecondary: "#9a95ab",
-                colorInputBackground: "#1c1f2a",
-                colorNeutral: "#2a2e3d",
-                borderRadius: "12px",
-              },
-            }}
+            appearance={clerkAuthAppearance}
           />
         </div>
       </div>

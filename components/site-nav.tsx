@@ -9,30 +9,32 @@ export function SiteNav({ active }: { active: "home" | "pricing" | "quiz" | "ana
 
   return (
     <nav className={styles.nav}>
-      <Link className={styles.brand} href="/">
-        <span className={styles.brandMark}>K</span>
-        <span>Knightora</span>
-      </Link>
-      <div className={styles.links}>
-        <Link className={`${styles.link} ${active === "home" ? styles.linkActive : ""}`} href="/">
-          Home
+      <div className={styles.navInner}>
+        <Link className={styles.brand} href="/">
+          <span className={styles.brandMark}>K</span>
+          <span>Knightora</span>
         </Link>
-        <Link className={`${styles.link} ${active === "pricing" ? styles.linkActive : ""}`} href="/pricing">
-          Pricing
-        </Link>
-        <Link className={`${styles.link} ${active === "quiz" ? styles.linkActive : ""}`} href="/quiz">
-          Quiz
-        </Link>
-        <Link className={`${styles.link} ${active === "analysis" ? styles.linkActive : ""}`} href="/analysis">
-          Analysis
-        </Link>
-        {isLoaded && isSignedIn ? (
-          <UserButton />
-        ) : (
-          <Link className={styles.cta} href="/sign-in">
-            Sign in
+        <div className={styles.links}>
+          <Link className={`${styles.link} ${active === "home" ? styles.linkActive : ""}`} href="/">
+            Home
           </Link>
-        )}
+          <Link className={`${styles.link} ${active === "pricing" ? styles.linkActive : ""}`} href="/pricing">
+            Pricing
+          </Link>
+          <Link className={`${styles.link} ${active === "quiz" ? styles.linkActive : ""}`} href="/quiz">
+            Quiz
+          </Link>
+          <Link className={`${styles.link} ${active === "analysis" ? styles.linkActive : ""}`} href="/analysis">
+            Analysis
+          </Link>
+          {isLoaded && isSignedIn ? (
+            <UserButton />
+          ) : (
+            <Link className={styles.cta} href="/sign-in">
+              Sign in
+            </Link>
+          )}
+        </div>
       </div>
     </nav>
   );

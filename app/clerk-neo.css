@@ -1,0 +1,127 @@
+/* Clerk + dark page: bright “glass” card, readable labels and inputs */
+
+.clerk-neo-root {
+  width: 100%;
+  max-width: 420px;
+}
+
+@keyframes neo-card-breathe {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(100, 200, 255, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.85),
+      0 4px 24px rgba(0, 0, 0, 0.25),
+      0 32px 96px rgba(0, 0, 0, 0.35),
+      0 0 80px rgba(94, 200, 255, 0.08);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(100, 200, 255, 0.22),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      0 8px 32px rgba(0, 0, 0, 0.28),
+      0 40px 120px rgba(0, 0, 0, 0.4),
+      0 0 100px rgba(94, 200, 255, 0.14);
+  }
+}
+
+.clerk-neo-card {
+  background: linear-gradient(
+    155deg,
+    rgba(255, 255, 255, 0.98) 0%,
+    rgba(244, 248, 255, 0.96) 45%,
+    rgba(250, 252, 255, 0.98) 100%
+  ) !important;
+  border: 1px solid rgba(255, 255, 255, 0.65) !important;
+  border-radius: 20px !important;
+  box-shadow:
+    0 0 0 1px rgba(100, 200, 255, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 4px 24px rgba(0, 0, 0, 0.25),
+    0 32px 96px rgba(0, 0, 0, 0.35),
+    0 0 80px rgba(94, 200, 255, 0.08) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transform: perspective(900px) translateZ(0) rotateX(2deg);
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.4s ease;
+  animation: neo-card-breathe 8s ease-in-out infinite;
+}
+
+.clerk-neo-card:hover {
+  transform: perspective(900px) translateZ(12px) rotateX(0deg);
+}
+
+.clerk-neo-header-title {
+  color: #0b0d14 !important;
+  font-weight: 600 !important;
+}
+
+.clerk-neo-header-subtitle {
+  color: #5a6278 !important;
+}
+
+.clerk-neo-label {
+  color: #2a3142 !important;
+  font-weight: 600 !important;
+}
+
+.clerk-neo-input {
+  color: #0b0d14 !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(15, 25, 45, 0.12) !important;
+}
+
+.clerk-neo-hint {
+  color: #5a6278 !important;
+}
+
+.clerk-neo-error {
+  color: #c41c1c !important;
+}
+
+.clerk-neo-preview {
+  color: #0b0d14 !important;
+}
+
+.clerk-neo-oauth {
+  border: 1px solid rgba(15, 25, 45, 0.12) !important;
+  background: #ffffff !important;
+  color: #0b0d14 !important;
+}
+
+.clerk-neo-primary {
+  font-weight: 600 !important;
+}
+
+.clerk-neo-divider {
+  background: rgba(15, 25, 45, 0.1) !important;
+}
+
+.clerk-neo-divider-text {
+  color: #5a6278 !important;
+}
+
+.clerk-neo-footer,
+.clerk-neo-footer-action {
+  color: #5a6278 !important;
+}
+
+.clerk-neo-footer-link {
+  color: #ff5548 !important;
+  font-weight: 600 !important;
+}
+
+.clerk-neo-logo {
+  filter: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clerk-neo-card {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .clerk-neo-card:hover {
+    transform: none !important;
+  }
+}

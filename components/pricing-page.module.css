@@ -1,18 +1,18 @@
 .shell {
   width: min(1180px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 18px 0 64px;
+  padding: 40px 0 88px;
 }
 
 .hero {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 28px;
-  box-shadow: var(--shadow);
-  padding: 30px;
-  margin-bottom: 20px;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  border-radius: 22px;
+  box-shadow: var(--shadow-lift), var(--glow-cyan);
+  padding: 40px 36px;
+  margin-bottom: 24px;
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
 }
 
 .hero h1 {
@@ -36,10 +36,10 @@
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 20px;
-  box-shadow: var(--shadow);
-  padding: 18px;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--shadow-lift), 0 0 0 1px rgba(94, 200, 255, 0.06);
+  padding: 24px 22px;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 
 .price {
@@ -69,8 +69,10 @@
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 20px;
-  box-shadow: var(--shadow);
-  padding: 20px;
+  box-shadow: var(--shadow-lift);
+  padding: 24px;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 
 .table {

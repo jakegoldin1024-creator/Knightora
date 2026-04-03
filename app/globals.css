@@ -1,26 +1,36 @@
 :root {
-  --bg: #0b0c10;
-  --bg-elevated: #12141c;
-  --panel: rgba(255, 255, 255, 0.055);
-  --panel-strong: rgba(255, 255, 255, 0.09);
-  --text: #f2f0f8;
-  --muted: #9a95ab;
-  --border: rgba(255, 255, 255, 0.1);
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  /* Dark neo-tech base */
+  --bg: #05060c;
+  --bg-elevated: #0c0e16;
+  --panel: rgba(16, 20, 32, 0.65);
+  --panel-strong: rgba(22, 28, 44, 0.82);
+  --text: #eef1ff;
+  --muted: #9aa4c0;
+  --border: rgba(120, 190, 255, 0.14);
+  --border-soft: rgba(255, 255, 255, 0.08);
   --brand: #ff6b5c;
-  --brand-soft: rgba(255, 107, 92, 0.16);
-  --accent: #6eb5ff;
+  --brand-soft: rgba(255, 107, 92, 0.14);
+  --accent: #5ec8ff;
+  --accent-2: #a78bfa;
   --shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
-  --glow: 0 0 100px rgba(110, 181, 255, 0.08);
+  --shadow-lift: 0 12px 40px rgba(0, 0, 0, 0.4);
+  --glow-cyan: 0 0 60px rgba(94, 200, 255, 0.1);
+  --glow-brand: 0 0 48px rgba(255, 107, 92, 0.12);
+  --depth-3d: 1600px;
+  --lift-hover: translateY(-10px) translateZ(28px);
 
-  /* Nested surfaces (quiz / cards) */
-  --surface-faint: rgba(255, 255, 255, 0.04);
-  --surface-nested: rgba(255, 255, 255, 0.065);
-  --surface-raised: rgba(255, 255, 255, 0.1);
-  --surface-input: rgba(255, 255, 255, 0.12);
-  --surface-max: rgba(255, 255, 255, 0.14);
+  --surface-faint: rgba(255, 255, 255, 0.03);
+  --surface-nested: rgba(255, 255, 255, 0.05);
+  --surface-raised: rgba(255, 255, 255, 0.08);
+  --surface-input: rgba(255, 255, 255, 0.07);
+  --surface-max: rgba(255, 255, 255, 0.11);
 
-  --primary-gradient: linear-gradient(135deg, #ff6b5c 0%, #ff9a7a 100%);
-  --on-primary: #0b0c10;
+  --primary-gradient: linear-gradient(135deg, #ff6b5c 0%, #ff8a6e 55%, #ffb38a 100%);
+  --neo-edge: linear-gradient(135deg, rgba(94, 200, 255, 0.35), rgba(167, 139, 250, 0.25), rgba(255, 107, 92, 0.2));
+  --on-primary: #0a0b10;
 }
 
 * {
@@ -34,13 +44,17 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-sans);
   line-height: 1.5;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
   color: var(--text);
-  background:
-    radial-gradient(ellipse 100% 80% at 50% -30%, rgba(110, 181, 255, 0.14), transparent 55%),
-    radial-gradient(ellipse 70% 50% at 100% 80%, rgba(255, 107, 92, 0.09), transparent 50%),
-    linear-gradient(180deg, #07080c 0%, var(--bg) 45%, #0e1018 100%);
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(ellipse 100% 70% at 50% -25%, rgba(94, 200, 255, 0.14), transparent 52%),
+    radial-gradient(ellipse 70% 55% at 105% 35%, rgba(167, 139, 250, 0.09), transparent 48%),
+    radial-gradient(ellipse 55% 45% at -5% 75%, rgba(255, 107, 92, 0.07), transparent 50%),
+    linear-gradient(180deg, #03040a 0%, var(--bg) 38%, #080a12 100%);
 }
 
 body::before {
@@ -50,16 +64,18 @@ body::before {
   pointer-events: none;
   z-index: 0;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.028) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.028) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: radial-gradient(ellipse 85% 75% at 50% 20%, black, transparent 72%);
+    linear-gradient(rgba(120, 190, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(120, 190, 255, 0.04) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 85% 70% at 50% 25%, black, transparent 72%);
 }
 
 h1,
 h2,
 h3 {
-  font-family: var(--font-display), var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.025em;
 }
 
 a {
@@ -80,6 +96,6 @@ textarea {
 }
 
 ::selection {
-  background: rgba(110, 181, 255, 0.35);
+  background: rgba(94, 200, 255, 0.28);
   color: var(--text);
 }

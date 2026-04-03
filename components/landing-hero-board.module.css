@@ -3,13 +3,34 @@
   width: min(100%, 320px);
   margin: 0 auto;
   aspect-ratio: 1;
-  border-radius: 14px;
+  border-radius: 16px;
   overflow: hidden;
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.08),
-    0 24px 48px rgba(0, 0, 0, 0.45);
+    0 0 0 1px rgba(94, 200, 255, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 24px 64px rgba(0, 0, 0, 0.55),
+    0 0 64px rgba(94, 200, 255, 0.12),
+    0 0 100px rgba(167, 139, 250, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.12);
   isolation: isolate;
+  transform-style: preserve-3d;
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.45s ease;
+}
+
+.wrap:hover {
+  transform: perspective(800px) rotateX(4deg) rotateY(-3deg) translateZ(8px);
+  box-shadow:
+    0 0 0 1px rgba(94, 200, 255, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 32px 80px rgba(0, 0, 0, 0.6),
+    0 0 80px rgba(94, 200, 255, 0.18);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wrap,
+  .wrap:hover {
+    transform: none;
+  }
 }
 
 .board {

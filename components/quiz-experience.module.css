@@ -1,7 +1,29 @@
 .pageShell {
   width: min(1180px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 24px 0 64px;
+  padding: 32px 0 80px;
+  position: relative;
+  isolation: isolate;
+}
+
+.pageShell::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -48px;
+  transform: translateX(-50%);
+  width: min(960px, 96vw);
+  height: 380px;
+  background: radial-gradient(ellipse 78% 62% at 50% 0%, rgba(94, 200, 255, 0.16), transparent 68%);
+  pointer-events: none;
+  z-index: 0;
+  animation: neo-aurora 24s ease-in-out infinite;
+}
+
+.pageShell > header,
+.pageShell > main {
+  position: relative;
+  z-index: 1;
 }
 
 .topbar,
@@ -46,10 +68,20 @@
   height: 38px;
   display: grid;
   place-items: center;
-  border-radius: 12px;
-  background: var(--brand);
-  color: #fff;
-  box-shadow: var(--shadow);
+  border-radius: 10px;
+  background: var(--primary-gradient);
+  color: var(--on-primary);
+  box-shadow:
+    0 1px 4px rgba(255, 107, 92, 0.35),
+    0 0 28px rgba(255, 107, 92, 0.25);
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
+}
+
+.brandMark:hover {
+  transform: translateY(-2px) scale(1.04);
+  box-shadow:
+    0 8px 28px rgba(255, 107, 92, 0.4),
+    0 0 40px rgba(255, 107, 92, 0.3);
 }
 
 .ghostLink,
@@ -72,6 +104,12 @@
   align-items: center;
 }
 
+@media (min-width: 960px) {
+  .heroGrid {
+    perspective: var(--depth-3d);
+  }
+}
+
 .heroCopy h1,
 .sectionHeading h2,
 .recommendationPreview h3,
@@ -87,15 +125,18 @@
   margin: 0 0 18px;
   max-width: 11ch;
   letter-spacing: -0.03em;
+  text-shadow:
+    0 0 48px rgba(94, 200, 255, 0.18),
+    0 4px 32px rgba(167, 139, 250, 0.1);
 }
 
 .eyebrow {
-  margin: 0 0 16px;
-  color: var(--brand);
+  margin: 0 0 12px;
+  color: rgba(180, 210, 255, 0.85);
   text-transform: uppercase;
-  letter-spacing: 0.18em;
-  font-size: 0.78rem;
-  font-weight: 700;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  font-weight: 600;
 }
 
 .lede,
@@ -127,9 +168,9 @@
 }
 
 .button {
-  border-radius: 999px;
-  padding: 14px 20px;
-  font-weight: 700;
+  border-radius: 980px;
+  padding: 12px 22px;
+  font-weight: 500;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -144,7 +185,15 @@
 .buttonPrimary {
   background: var(--primary-gradient);
   color: var(--on-primary);
-  box-shadow: 0 8px 28px rgba(255, 107, 92, 0.25);
+  box-shadow:
+    0 1px 4px rgba(255, 107, 92, 0.35),
+    0 0 36px rgba(255, 107, 92, 0.2);
+}
+
+.buttonPrimary:hover {
+  box-shadow:
+    0 12px 40px rgba(255, 107, 92, 0.45),
+    0 0 52px rgba(255, 107, 92, 0.28);
 }
 
 .buttonSecondary {
@@ -180,35 +229,59 @@
 .metricCard {
   background: var(--panel);
   border: 1px solid var(--border);
+  box-shadow:
+    var(--shadow-lift),
+    0 0 0 1px rgba(94, 200, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  box-shadow: var(--shadow);
-  border-radius: 28px;
 }
 
 .heroCard {
-  padding: 28px;
+  padding: 36px 32px;
   position: relative;
   overflow: hidden;
+  transform-style: preserve-3d;
+  transition:
+    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.5s ease;
+}
+
+@media (min-width: 960px) {
+  .heroCard {
+    transform: rotateX(1.2deg) translateZ(0);
+  }
+
+  .heroCard:hover {
+    transform: rotateX(0deg) translateY(-12px) translateZ(36px);
+    box-shadow:
+      0 40px 100px rgba(0, 0, 0, 0.55),
+      0 0 0 1px rgba(94, 200, 255, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      0 0 80px rgba(94, 200, 255, 0.14);
+  }
 }
 
 .heroCard::after {
   content: "";
   position: absolute;
   inset: auto -30% -35% auto;
-  width: 240px;
-  height: 240px;
+  width: 280px;
+  height: 280px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 107, 92, 0.22), transparent 65%);
+  background: radial-gradient(circle, rgba(255, 107, 92, 0.14), rgba(94, 200, 255, 0.06), transparent 62%);
+  pointer-events: none;
 }
 
 .cardLabel,
 .metricLabel {
-  margin: 0 0 20px;
-  font-size: 0.85rem;
+  margin: 0 0 16px;
+  font-size: 0.8125rem;
   color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
+  text-transform: none;
+  letter-spacing: -0.01em;
+  font-weight: 600;
 }
 
 .recommendationPreview,
@@ -325,7 +398,7 @@
 
 .tabButtonActive {
   background: var(--text);
-  color: #fff;
+  color: var(--on-primary);
 }
 
 .fieldLabel {
@@ -1046,10 +1119,10 @@
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 0.72rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #fff;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: -0.01em;
+  color: var(--on-primary);
   background: linear-gradient(145deg, #257848, #4ade80);
 }
 
@@ -1063,7 +1136,7 @@
   padding: 12px 14px;
   border-radius: 14px;
   border: 1px solid rgba(37, 120, 72, 0.35);
-  background: linear-gradient(135deg, rgba(74, 222, 128, 0.14), rgba(255, 255, 255, 0.72));
+  background: linear-gradient(135deg, rgba(74, 222, 128, 0.12), rgba(94, 200, 255, 0.06));
 }
 
 .chapterCelebrationBanner p {
@@ -1684,10 +1757,10 @@
   grid-template-columns: repeat(8, minmax(0, 1fr));
   gap: 0;
   max-width: 640px;
-  border-radius: 22px;
+  border-radius: 14px;
   overflow: hidden;
   border: 1px solid var(--border);
-  background: rgba(30, 29, 26, 0.08);
+  background: rgba(0, 0, 0, 0.04);
 }
 
 .boardSquare {
@@ -2009,5 +2082,20 @@
 
   .button {
     width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pageShell::before {
+    animation: none;
+  }
+
+  .heroCard,
+  .heroCard:hover {
+    transform: none !important;
+  }
+
+  .brandMark:hover {
+    transform: none;
   }
 }

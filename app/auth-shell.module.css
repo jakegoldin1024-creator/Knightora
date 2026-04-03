@@ -1,0 +1,76 @@
+.shell {
+  min-height: 100dvh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.shell::before {
+  content: "";
+  position: absolute;
+  inset: -40% -20%;
+  background:
+    radial-gradient(ellipse 50% 40% at 50% 0%, rgba(94, 200, 255, 0.18), transparent 55%),
+    radial-gradient(ellipse 40% 35% at 90% 60%, rgba(167, 139, 250, 0.12), transparent 50%),
+    radial-gradient(ellipse 35% 30% at 10% 70%, rgba(255, 107, 92, 0.1), transparent 45%);
+  pointer-events: none;
+  z-index: 0;
+  animation: neo-aurora 22s ease-in-out infinite;
+}
+
+.inner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 720px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.eyebrow {
+  font-size: 0.75rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(180, 210, 255, 0.75);
+  margin: 0 0 12px;
+  font-weight: 600;
+}
+
+.title {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 600;
+  color: #f4f6ff;
+  margin: 0 0 14px;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  text-shadow:
+    0 0 48px rgba(94, 200, 255, 0.22),
+    0 4px 32px rgba(167, 139, 250, 0.12);
+}
+
+.lede {
+  color: rgba(200, 210, 235, 0.88);
+  font-size: 1.0625rem;
+  margin: 0 0 28px;
+  line-height: 1.55;
+  max-width: 36ch;
+}
+
+.embed {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  perspective: 1000px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell::before {
+    animation: none;
+  }
+}
