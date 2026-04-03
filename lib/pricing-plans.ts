@@ -19,12 +19,12 @@ export const PRICING_PLANS: PlanDefinition[] = [
     price: "$0",
     description: "Browse marketing pages only. Training, analysis, and the full product require a subscription.",
     features: ["View Home and Pricing", "Sign in or create an account", "No opening training, drills, or game analysis"],
-    idealFor: "Anyone evaluating whether Knightora is a fit before subscribing.",
+    idealFor: "Anyone evaluating whether Knightneo is a fit before subscribing.",
     cta: "View pricing",
   },
   {
     id: "paid",
-    name: "Knightora",
+    name: "Knightneo",
     price: "$9.99/mo or $99.99/yr",
     description: "Full access: repertoire quiz, all lesson tiers, deviations, game analysis, Stockfish on positions, and cloud sync.",
     features: [

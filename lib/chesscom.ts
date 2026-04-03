@@ -75,7 +75,7 @@ export type ChessProfileResponse = {
 };
 
 const CHESS_HEADERS = {
-  "User-Agent": "Knightora/0.1 (opening-recommendation prototype)",
+  "User-Agent": "Knightneo/0.1 (opening-recommendation prototype)",
 };
 
 const DRAW_RESULTS = new Set([

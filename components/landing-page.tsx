@@ -143,11 +143,11 @@ export function LandingPage() {
               <dt>What do I paste for game analysis?</dt>
               <dd>
                 A complete PGN, or a public Chess.com or Lichess game URL. Analysis requires an active subscription; parsing and
-                privacy stay on Knightora’s servers.
+                privacy stay on Knightneo’s servers.
               </dd>
               <dt>Is my data sold?</dt>
               <dd>
-                Knightora uses your account to save progress and billing. We do not sell personal data; use the product as
+                Knightneo uses your account to save progress and billing. We do not sell personal data; use the product as
                 described in our policies on the Clerk and payment providers you choose at checkout.
               </dd>
             </dl>

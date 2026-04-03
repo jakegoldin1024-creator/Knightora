@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getPlanForPriceId, getStripeClient } from "@/lib/billing";
-import { getClerkIdForKnightoraUserId, updateSubscriptionByUserId } from "@/lib/account-store";
+import { getClerkIdForKnightneoUserId, updateSubscriptionByUserId } from "@/lib/account-store";
 import { syncClerkPublicSubscriptionPlan } from "@/lib/clerk-subscription-sync";
 import type { SubscriptionPlan } from "@/lib/subscription";
 
@@ -14,13 +14,13 @@ function isEntitlementActive(status: Stripe.Subscription.Status): boolean {
   return status === "active" || status === "trialing";
 }
 
-async function applySubscriptionPlan(knightoraUserId: string, clerkUserId: string | undefined, plan: SubscriptionPlan) {
+async function applySubscriptionPlan(knightneoUserId: string, clerkUserId: string | undefined, plan: SubscriptionPlan) {
   try {
-    await updateSubscriptionByUserId(knightoraUserId, plan);
+    await updateSubscriptionByUserId(knightneoUserId, plan);
   } catch {
     // app-db.json may be read-only on serverless hosts; Clerk metadata is the source of truth there.
   }
-  const clerkKey = clerkUserId ?? (await getClerkIdForKnightoraUserId(knightoraUserId));
+  const clerkKey = clerkUserId ?? (await getClerkIdForKnightneoUserId(knightneoUserId));
   if (clerkKey) {
     try {
       await syncClerkPublicSubscriptionPlan(clerkKey, plan);
@@ -28,8 +28,8 @@ async function applySubscriptionPlan(knightoraUserId: string, clerkUserId: strin
       console.error("Clerk subscription metadata sync failed", error);
     }
   } else {
-    console.error("Stripe webhook: no clerkUserId for Knightora user; cannot sync Clerk metadata.", {
-      knightoraUserId,
+    console.error("Stripe webhook: no clerkUserId for Knightneo user; cannot sync Clerk metadata.", {
+      knightneoUserId,
     });
   }
 }

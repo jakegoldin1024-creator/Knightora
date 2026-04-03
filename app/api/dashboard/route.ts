@@ -7,13 +7,13 @@ import {
   saveDashboardForClerk,
   type SavedDashboard,
 } from "@/lib/account-store";
-import { resolveClerkKnightoraAccount } from "@/lib/clerk-account";
+import { resolveClerkKnightneoAccount } from "@/lib/clerk-account";
 import { auth } from "@clerk/nextjs/server";
 
 export async function GET() {
   const { userId } = await auth();
   if (userId) {
-    const account = await resolveClerkKnightoraAccount();
+    const account = await resolveClerkKnightneoAccount();
     return NextResponse.json({ dashboard: account?.dashboard ?? null }, { status: 200 });
   }
 

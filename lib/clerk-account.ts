@@ -2,8 +2,8 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { syncClerkAccount } from "@/lib/account-store";
 import { mergeFilePlanWithClerkMetadata } from "@/lib/clerk-subscription-sync";
 
-/** Loads Clerk session and syncs/creates the matching Knightora user row. */
-export async function resolveClerkKnightoraAccount() {
+/** Loads Clerk session and syncs/creates the matching Knightneo user row. */
+export async function resolveClerkKnightneoAccount() {
   let userId: string | null = null;
   try {
     ({ userId } = await auth());

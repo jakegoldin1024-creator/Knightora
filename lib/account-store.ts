@@ -58,7 +58,7 @@ type AppDb = {
 };
 
 const DB_PATH = path.join(process.cwd(), "data", "app-db.json");
-const SESSION_COOKIE = "knightora_session";
+const SESSION_COOKIE = "knightneo_session";
 
 export const DEFAULT_TRAINING_PROGRESS: TrainingProgress = {
   completedLessons: [],
@@ -191,7 +191,7 @@ export async function syncClerkAccount(input: {
     input.username?.trim() ||
     input.email?.split("@")[0] ||
     "Player";
-  const emailNorm = input.email?.trim().toLowerCase() ?? `${input.clerkUserId}@clerk.knightora`;
+  const emailNorm = input.email?.trim().toLowerCase() ?? `${input.clerkUserId}@clerk.knightneo`;
 
   let user = db.users.find((entry) => entry.clerkId === input.clerkUserId);
   if (user) {
@@ -267,9 +267,9 @@ export async function updateSubscriptionByUserId(userId: string, subscriptionPla
 }
 
 /** Used by Stripe webhooks when `clerkUserId` is missing from subscription metadata (older checkouts). */
-export async function getClerkIdForKnightoraUserId(knightoraUserId: string): Promise<string | undefined> {
+export async function getClerkIdForKnightneoUserId(knightneoUserId: string): Promise<string | undefined> {
   const db = await readDb();
-  return db.users.find((entry) => entry.id === knightoraUserId)?.clerkId;
+  return db.users.find((entry) => entry.id === knightneoUserId)?.clerkId;
 }
 
 export function getSessionCookieName() {

@@ -1,10 +1,10 @@
 import { Chess, type Square } from "chess.js";
 
 /**
- * Build a FEN string from Knightora piece placements (uppercase = White).
+ * Build a FEN string from Knightneo piece placements (uppercase = White).
  * Used so board drills can validate legal destinations with chess.js.
  */
-export function buildFenFromKnightoraPlacements(
+export function buildFenFromKnightneoPlacements(
   placements: Array<{ square: string; piece: string }>,
   sideToMove: "w" | "b",
 ): string {

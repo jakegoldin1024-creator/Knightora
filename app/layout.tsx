@@ -1,9 +1,15 @@
 import { ClerkProvider } from "@clerk/nextjs";
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { clerkAuthAppearance } from "@/lib/clerk-auth-appearance";
 import "./globals.css";
 import "./immersive.css";
 import "./clerk-neo.css";
+
+export const metadata: Metadata = {
+  title: { default: "Knightneo", template: "%s · Knightneo" },
+  description: "Chess opening prep—quiz, repertoire paths, drills, and game analysis.",
+};
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

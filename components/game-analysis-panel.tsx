@@ -44,7 +44,7 @@ type GameAnalysisResult = {
   };
 };
 
-const GAME_ANALYSIS_RECENT_KEY = "knightora-game-analysis-recent-v1";
+const GAME_ANALYSIS_RECENT_KEY = "knightneo-game-analysis-recent-v1";
 
 export function GameAnalysisPanel({ selectedPlan }: { selectedPlan: SubscriptionPlan }) {
   const [gameInputMode, setGameInputMode] = useState<"pgn" | "url">("pgn");
@@ -73,7 +73,7 @@ export function GameAnalysisPanel({ selectedPlan }: { selectedPlan: Subscription
     setGameAnalysisError(null);
     setGameAnalysisResult(null);
     if (!canUseFullGameAnalysis) {
-      setGameAnalysisError("Full-game analysis is included with a Knightora subscription ($9.99/mo or $99.99/yr).");
+      setGameAnalysisError("Full-game analysis is included with a Knightneo subscription ($9.99/mo or $99.99/yr).");
       return;
     }
     if (gameInputMode === "pgn" && !gamePgnInput.trim()) {
@@ -103,7 +103,7 @@ export function GameAnalysisPanel({ selectedPlan }: { selectedPlan: Subscription
 
       if (response.status === 403) {
         throw new Error(
-          "Full-game analysis needs an active Knightora subscription. Open Pricing to subscribe, then run analysis again while signed in.",
+          "Full-game analysis needs an active Knightneo subscription. Open Pricing to subscribe, then run analysis again while signed in.",
         );
       }
 

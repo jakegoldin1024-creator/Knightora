@@ -1,15 +1,15 @@
-# Knightora
+# Knightneo
 
-Knightora is a chess opening recommendation product focused on curation over overload.
+Knightneo is a chess opening recommendation product focused on curation over overload.
 
 This workspace now contains two versions:
 
-- `Static prototype`: open `/Users/jakegoldin/Documents/Knightora/index.html` directly in a browser
-- `Next.js app scaffold`: real app structure in `/Users/jakegoldin/Documents/Knightora/app`, `/Users/jakegoldin/Documents/Knightora/components`, `/Users/jakegoldin/Documents/Knightora/lib`, and `/Users/jakegoldin/Documents/Knightora/data`
+- `Static prototype`: open `./index.html` directly in a browser
+- `Next.js app scaffold`: real app structure in `./app`, `./components`, `./lib`, and `./data`
 
 ## What is included
 
-- A landing page for the Knightora concept
+- A landing page for the Knightneo concept
 - A 6-step onboarding quiz
 - Optional Chess.com username input
 - A recommendation engine that returns:
@@ -22,7 +22,7 @@ This workspace now contains two versions:
 ## Running the Next.js app
 
 ```bash
-cd /Users/jakegoldin/Documents/Knightora
+cd <repo-root>
 npm install
 npm run dev
 ```
@@ -39,7 +39,7 @@ Board drills use **chess.js** for the multi-move lines: each position is stored 
    - `CLERK_SECRET_KEY`
 3. In Clerk → **Domains**, add:
    - `http://localhost:3000` for local dev
-   - `https://knightora.vercel.app` (and your custom domain when you use one) for production
+   - `https://<your-project>.vercel.app` (and your custom domain when you use one) for production
 4. Sign-in and sign-up routes are `/sign-in` and `/sign-up`.
 
 On Vercel, add the same two Clerk variables in **Project → Settings → Environment Variables**, then redeploy.
@@ -49,7 +49,7 @@ On Vercel, add the same two Clerk variables in **Project → Settings → Enviro
 If you want to enable admin test mode from the UI, set an admin code:
 
 ```bash
-export KNIGHTORA_ADMIN_CODE="your-secret-code"
+export KNIGHTNEO_ADMIN_CODE="your-secret-code"
 npm run dev
 ```
 
@@ -67,7 +67,7 @@ cp .env.example .env.local
 
 2. In [Stripe Dashboard](https://dashboard.stripe.com) (**Test mode** for local dev):
 
-   - **Products** → create a product (e.g. “Knightora”).
+   - **Products** → create a product (e.g. “Knightneo”).
    - Add **two recurring prices** (e.g. monthly and yearly; amounts should match your marketing copy in [`lib/pricing-plans.ts`](lib/pricing-plans.ts)).
    - Copy each **Price ID** (`price_...`) into `.env.local`:
      - `STRIPE_PRICE_PAID_MONTHLY`
@@ -108,16 +108,16 @@ Paste that endpoint’s **signing secret** into `STRIPE_WEBHOOK_SECRET` for prod
 4. **Clerk:** `CLERK_SECRET_KEY` on the server must be valid so the webhook can set `publicMetadata.subscriptionPlan`. In Clerk Dashboard, ensure your app allows updating user metadata from the Backend API (default setups work).
 5. **Stripe Dashboard → Developers → Webhooks → your endpoint → recent deliveries:** open a failed delivery to read the response body (e.g. missing secret, 500 from Clerk).
 
-## Deploying beyond localhost (Knightora.ai)
+## Deploying beyond localhost (Knightneo.ai)
 
-Recommended: deploy with Vercel + connect `Knightora.ai`.
+Recommended: deploy with Vercel + connect `Knightneo.ai`.
 
 1. Push this repo to GitHub.
 2. Import project in Vercel.
 3. Add all environment variables from `.env.example` in Vercel project settings.
 4. Add production Stripe webhook endpoint `https://your-domain/api/billing/webhook` with the four events listed under **Real Stripe billing setup** above; set `STRIPE_WEBHOOK_SECRET` to that endpoint’s signing secret.
-5. In your domain registrar DNS for `Knightora.ai`, point nameservers/records to Vercel.
-6. In Vercel Domains, attach `Knightora.ai` and `www.knightora.ai`.
+5. In your domain registrar DNS for `Knightneo.ai`, point nameservers/records to Vercel.
+6. In Vercel Domains, attach `Knightneo.ai` and `www.knightneo.ai`.
 
 ### Verify build quality
 
@@ -130,12 +130,12 @@ npm run lint
 
 The original static prototype is still included:
 
-- Open `/Users/jakegoldin/Documents/Knightora/index.html` in a browser
+- Open `./index.html` in a browser
 
 Or serve it locally:
 
 ```bash
-cd /Users/jakegoldin/Documents/Knightora
+cd <repo-root>
 python3 -m http.server 8000
 ```
 

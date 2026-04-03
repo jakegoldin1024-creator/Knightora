@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, 
 import { filterLessonsForPlan, getTrainingTrack, type TrainingLesson, type TrainingVariation } from "@/data/training";
 import { ADMIN_UNLOCK_ENABLED } from "@/lib/admin-unlock";
 import { type SubscriptionPlan, isPaidPlan } from "@/lib/subscription";
-import { buildFenFromKnightoraPlacements, inferSideToMoveFromSource } from "@/lib/board-fen";
+import { buildFenFromKnightneoPlacements, inferSideToMoveFromSource } from "@/lib/board-fen";
 import { getLegalDestinationsForSource, isLegalDestinationForSource } from "@/lib/move-legality";
 import { analyzeFenWithStockfish, type StockfishEval } from "@/lib/stockfish-client";
 import type { ChessProfileResponse } from "@/lib/chesscom";
@@ -127,9 +127,9 @@ function userPlyNumberAtStep(steps: Array<{ fen: string }>, lineStepIndex: numbe
   return n;
 }
 
-const STORAGE_KEY = "knightora-dashboard-v2";
-const TRAINING_TELEMETRY_KEY = "knightora-training-telemetry-v1";
-const UX_TELEMETRY_KEY = "knightora-ux-telemetry-v1";
+const STORAGE_KEY = "knightneo-dashboard-v2";
+const TRAINING_TELEMETRY_KEY = "knightneo-training-telemetry-v1";
+const UX_TELEMETRY_KEY = "knightneo-ux-telemetry-v1";
 
 const initialProfile: QuizProfile = {
   rating: "developing",
@@ -649,7 +649,7 @@ export function QuizExperience() {
       const message =
         error instanceof Error
           ? error.message
-          : "We could not analyze that Chess.com account, so Knightora fell back to quiz-only recommendations.";
+          : "We could not analyze that Chess.com account, so Knightneo fell back to quiz-only recommendations.";
       setAnalysisError(message);
       setSavedDashboard(buildDashboard(profile, fallbackRepertoire, null, progress));
       goToOpeningsAfterRepertoireBuild();
@@ -1092,7 +1092,7 @@ export function QuizExperience() {
         <main>
           <section className={styles.panel}>
             <div className={styles.sectionHeading}>
-              <p className={styles.eyebrow}>Knightora</p>
+              <p className={styles.eyebrow}>Knightneo</p>
               <h2>Loading your training dashboard…</h2>
             </div>
           </section>
@@ -1107,7 +1107,7 @@ export function QuizExperience() {
         <nav className={styles.topbar}>
           <div className={styles.brand}>
             <span className={styles.brandMark}>K</span>
-            <span className={styles.brandName}>Knightora</span>
+            <span className={styles.brandName}>Knightneo</span>
           </div>
           <div className={styles.topbarLinks}>
             <Link href="/" className={styles.ghostLink}>
@@ -1262,7 +1262,7 @@ export function QuizExperience() {
             <div className={styles.questionBlock}>
               <p>6. Optional Chess.com username</p>
               <label htmlFor="username" className={styles.assistiveLabel}>
-                Knightora will blend recent public games into the recommendation and training path.
+                Knightneo will blend recent public games into the recommendation and training path.
               </label>
               <input id="username" type="text" placeholder="e.g. hikaru" value={profile.username ?? ""} onChange={(event) => updateField("username", event.target.value)} />
             </div>
@@ -1379,7 +1379,7 @@ export function QuizExperience() {
             {isPending ? (
               <div className={styles.statusCard}>
                 <p className={styles.statusTitle}>Analyzing Chess.com games</p>
-                <p>Knightora is comparing your real opening habits against the quiz profile.</p>
+                <p>Knightneo is comparing your real opening habits against the quiz profile.</p>
               </div>
             ) : null}
 
@@ -1406,7 +1406,7 @@ export function QuizExperience() {
                   <p className={styles.eyebrow}>Your three lines</p>
                   <h3 className={styles.openingsShowcaseTitle}>Why these openings fit you</h3>
                   <p className={styles.trainingIntro}>
-                    Knightora ranked these systems from your quiz (and Chess.com stats when provided). Read the rationale, then open
+                    Knightneo ranked these systems from your quiz (and Chess.com stats when provided). Read the rationale, then open
                     the lesson path for the one you want to install first—you can train all three over time.
                   </p>
                 </header>
@@ -2123,7 +2123,7 @@ function getBoardInteractionSpec(lesson: TrainingLesson, lineStepIndex: number):
   }
   if (lesson.board) {
     try {
-      const fen = buildFenFromKnightoraPlacements(
+      const fen = buildFenFromKnightneoPlacements(
         lesson.board.pieces,
         inferSideToMoveFromSource(lesson.board.pieces, lesson.board.sourceSquare),
       );
@@ -2800,7 +2800,7 @@ function getGlobalReviewQueue(
 
 function formatPlanLabel(plan: SubscriptionPlan) {
   if (plan === "free") return "Free";
-  if (plan === "paid") return "Knightora";
+  if (plan === "paid") return "Knightneo";
   return "Admin Unlock";
 }
 
@@ -2902,7 +2902,7 @@ function formatComparisonLines(
   }
 
   if (topUsage && topScoring && topUsage.opening !== topScoring.opening) {
-    lines.push("Knightora can use that gap to recommend something familiar but better-performing.");
+    lines.push("Knightneo can use that gap to recommend something familiar but better-performing.");
   }
 
   return lines;

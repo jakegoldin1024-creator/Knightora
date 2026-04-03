@@ -1,10 +1,10 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getSessionAccount, getSessionCookieName } from "@/lib/account-store";
-import { resolveClerkKnightoraAccount } from "@/lib/clerk-account";
+import { resolveClerkKnightneoAccount } from "@/lib/clerk-account";
 
 export async function GET() {
-  const clerkAccount = await resolveClerkKnightoraAccount();
+  const clerkAccount = await resolveClerkKnightneoAccount();
   if (clerkAccount) {
     return NextResponse.json(clerkAccount, { status: 200 });
   }

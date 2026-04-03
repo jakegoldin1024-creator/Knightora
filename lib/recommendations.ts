@@ -172,7 +172,7 @@ function buildEvidence(opening: Opening, profile: QuizProfile, lane: RepertoireL
   }
 
   if (evidence.length === 0) {
-    evidence.push("This is the best overall fit from your current Knightora profile.");
+    evidence.push("This is the best overall fit from your current Knightneo profile.");
   }
 
   return evidence.slice(0, 3);

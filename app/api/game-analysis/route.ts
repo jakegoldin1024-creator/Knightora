@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionAccount, getSessionCookieName } from "@/lib/account-store";
 import { isPaidPlan } from "@/lib/subscription";
-import { resolveClerkKnightoraAccount } from "@/lib/clerk-account";
+import { resolveClerkKnightneoAccount } from "@/lib/clerk-account";
 import { analyzeGamePgn, type AnalysisLevel } from "@/lib/game-analysis";
 import { importGameFromInput } from "@/lib/game-import";
 import { buildCoachSummary } from "@/lib/coach-prompt";
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     const plan = account?.user.subscriptionPlan ?? "free";
     if (!isPaidPlan(plan)) {
       return NextResponse.json(
-        { error: "Full-game analysis is included with a Knightora subscription ($9.99/mo or $99.99/yr)." },
+        { error: "Full-game analysis is included with a Knightneo subscription ($9.99/mo or $99.99/yr)." },
         { status: 403 },
       );
     }
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
 }
 
 async function resolveAccount() {
-  const clerkAccount = await resolveClerkKnightoraAccount();
+  const clerkAccount = await resolveClerkKnightneoAccount();
   if (clerkAccount) return clerkAccount;
   const cookieStore = await cookies();
   const sessionToken = cookieStore.get(getSessionCookieName())?.value;

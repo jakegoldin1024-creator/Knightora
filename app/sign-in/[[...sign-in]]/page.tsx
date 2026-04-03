@@ -6,8 +6,8 @@ export default function Page() {
   return (
     <main className={styles.shell}>
       <div className={styles.inner}>
-        <p className={styles.eyebrow}>Knightora account</p>
-        <h1 className={styles.title}>Sign in to Knightora</h1>
+        <p className={styles.eyebrow}>Knightneo account</p>
+        <h1 className={styles.title}>Sign in to Knightneo</h1>
         <p className={styles.lede}>Welcome back—sign in to sync your quiz, openings, and training.</p>
         <div className={styles.embed}>
           <SignIn

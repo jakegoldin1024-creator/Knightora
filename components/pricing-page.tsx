@@ -13,7 +13,7 @@ export function PricingPage() {
       <SiteNav active="pricing" />
       <main className={styles.shell}>
         <section className={styles.hero}>
-          <h1>One subscription. Everything in Knightora.</h1>
+          <h1>One subscription. Everything in Knightneo.</h1>
           <p>
             Free is for browsing only. The full product — quiz, training, drills, game analysis, and Stockfish — unlocks with a single paid plan at
             $9.99/month or $99.99/year.
@@ -53,7 +53,7 @@ export function PricingPage() {
               <tr>
                 <th>Capability</th>
                 <th>Free</th>
-                <th>Knightora (paid)</th>
+                <th>Knightneo (paid)</th>
               </tr>
             </thead>
             <tbody>

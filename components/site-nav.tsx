@@ -12,7 +12,7 @@ export function SiteNav({ active }: { active: "home" | "pricing" | "quiz" | "ana
       <div className={styles.navInner}>
         <Link className={styles.brand} href="/">
           <span className={styles.brandMark}>K</span>
-          <span>Knightora</span>
+          <span>Knightneo</span>
         </Link>
         <div className={styles.links}>
           <Link className={`${styles.link} ${active === "home" ? styles.linkActive : ""}`} href="/">

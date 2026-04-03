@@ -110,7 +110,7 @@ const ratingMap = {
   advanced: "advanced",
 };
 
-const form = document.querySelector("#knightora-form");
+const form = document.querySelector("#knightneo-form");
 const resultsPanel = document.querySelector("#results");
 const recommendationsNode = document.querySelector("#recommendations");
 const summaryNode = document.querySelector("#results-summary");
@@ -180,7 +180,7 @@ function renderResults(profile, repertoire) {
       <strong>${describeGoal(profile.goal)}</strong>.${nameText}
     </p>
     <p>
-      In the full product, this is where Knightora would compare your self-image with your actual
+      In the full product, this is where Knightneo would compare your self-image with your actual
       game history and adjust your repertoire based on real opening usage, win rate, and recurring middlegame patterns.
     </p>
   `;
@@ -194,7 +194,7 @@ function renderResults(profile, repertoire) {
   studyPlanNode.innerHTML = `
     <h3>What to build next</h3>
     <p>
-      Your first version of Knightora should feel opinionated: one clear repertoire, one reason it fits, and one study path.
+      Your first version of Knightneo should feel opinionated: one clear repertoire, one reason it fits, and one study path.
       Avoid turning this into a giant opening encyclopedia too early.
     </p>
     <ul>

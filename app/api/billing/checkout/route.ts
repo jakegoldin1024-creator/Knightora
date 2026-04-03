@@ -4,7 +4,7 @@ import Stripe from "stripe";
 import { auth } from "@clerk/nextjs/server";
 import { getSessionAccount, getSessionCookieName } from "@/lib/account-store";
 import type { SubscriptionPlan } from "@/lib/subscription";
-import { resolveClerkKnightoraAccount } from "@/lib/clerk-account";
+import { resolveClerkKnightneoAccount } from "@/lib/clerk-account";
 import {
   billingPriceEnvHint,
   getPriceIdForPlan,
@@ -23,10 +23,10 @@ export async function POST(request: NextRequest) {
     }
 
     const { userId: clerkUserId } = await auth();
-    let account = null as Awaited<ReturnType<typeof resolveClerkKnightoraAccount>>;
+    let account = null as Awaited<ReturnType<typeof resolveClerkKnightneoAccount>>;
 
     if (clerkUserId) {
-      account = await resolveClerkKnightoraAccount();
+      account = await resolveClerkKnightneoAccount();
     } else {
       const cookieStore = await cookies();
       const sessionToken = cookieStore.get(getSessionCookieName())?.value;

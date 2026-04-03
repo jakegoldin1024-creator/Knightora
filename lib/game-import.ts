@@ -57,7 +57,7 @@ async function importFromChessCom(url: URL): Promise<ImportedGame> {
   }
 
   const response = await fetch(`https://api.chess.com/pub/game/${id}`, {
-    headers: { "User-Agent": "Knightora/0.1 (game-analysis)" },
+    headers: { "User-Agent": "Knightneo/0.1 (game-analysis)" },
     cache: "no-store",
   });
   if (!response.ok) {

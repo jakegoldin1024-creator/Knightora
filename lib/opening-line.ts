@@ -87,7 +87,7 @@ function chessBoardToPlacements(
       const cell = board[rankIndex][fileIndex];
       if (!cell) continue;
       const square = `${files[fileIndex]}${8 - rankIndex}`;
-      const ch = toKnightoraPiece(cell);
+      const ch = toKnightneoPiece(cell);
       pieces.push({ square, piece: ch });
     }
   }
@@ -95,7 +95,7 @@ function chessBoardToPlacements(
   return pieces;
 }
 
-function toKnightoraPiece(cell: { color: "w" | "b"; type: "p" | "n" | "b" | "r" | "q" | "k" }) {
+function toKnightneoPiece(cell: { color: "w" | "b"; type: "p" | "n" | "b" | "r" | "q" | "k" }) {
   const map: Record<typeof cell.type, string> = {
     p: "p",
     n: "n",

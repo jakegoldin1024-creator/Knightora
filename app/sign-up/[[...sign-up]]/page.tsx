@@ -6,7 +6,7 @@ export default function Page() {
   return (
     <main className={styles.shell}>
       <div className={styles.inner}>
-        <p className={styles.eyebrow}>Knightora account</p>
+        <p className={styles.eyebrow}>Knightneo account</p>
         <h1 className={styles.title}>Create your account</h1>
         <p className={styles.lede}>Save your repertoire, track progress, and train on any device.</p>
         <div className={styles.embed}>
