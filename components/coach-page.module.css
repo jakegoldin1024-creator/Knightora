@@ -1,0 +1,32 @@
+.shell {
+  width: min(100% - 40px, 1180px);
+  margin: 0 auto;
+  padding: 40px 0 64px;
+  display: grid;
+  gap: 24px;
+}
+
+.hero {
+  padding: 18px 0 4px;
+}
+
+.title {
+  margin: 0 0 8px;
+  font-size: clamp(1.65rem, 2.5vw, 2rem);
+  letter-spacing: -0.03em;
+}
+
+.lede {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+  max-width: 60ch;
+}
+
+.panel {
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 20px 20px 22px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.35);
+}

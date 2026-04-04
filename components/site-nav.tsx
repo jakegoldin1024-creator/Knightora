@@ -4,7 +4,7 @@ import Link from "next/link";
 import { UserButton, useAuth } from "@clerk/nextjs";
 import styles from "./site-nav.module.css";
 
-export function SiteNav({ active }: { active: "home" | "pricing" | "quiz" | "analysis" }) {
+export function SiteNav({ active }: { active: "home" | "pricing" | "quiz" | "analysis" | "coach" }) {
   const { isLoaded, isSignedIn } = useAuth();
 
   return (
@@ -26,6 +26,9 @@ export function SiteNav({ active }: { active: "home" | "pricing" | "quiz" | "ana
           </Link>
           <Link className={`${styles.link} ${active === "analysis" ? styles.linkActive : ""}`} href="/analysis">
             Analysis
+          </Link>
+          <Link className={`${styles.link} ${active === "coach" ? styles.linkActive : ""}`} href="/coach">
+            Coach
           </Link>
           {isLoaded && isSignedIn ? (
             <UserButton />
