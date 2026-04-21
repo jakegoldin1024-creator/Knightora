@@ -7,8 +7,10 @@ import type { SubscriptionPlan } from "@/lib/subscription";
 import { resolveClerkKnightneoAccount } from "@/lib/clerk-account";
 import {
   billingPriceEnvHint,
+  billingProductIdMistakeHint,
   getPriceIdForPlan,
   getStripeClient,
+  hasStripeSecretKey,
   isBillablePlan,
   type BillingInterval,
 } from "@/lib/billing";
@@ -39,8 +41,14 @@ export async function POST(request: NextRequest) {
 
     const priceId = getPriceIdForPlan(plan, interval);
     if (!priceId) {
+      const secretHint = hasStripeSecretKey()
+        ? "STRIPE_SECRET_KEY is set."
+        : "STRIPE_SECRET_KEY is missing—add your Stripe secret key (sk_test_… or sk_live_…).";
+      const priceHint = billingProductIdMistakeHint(interval) ?? billingPriceEnvHint(interval);
       return NextResponse.json(
-        { error: `No Stripe price ID for ${interval}ly billing. ${billingPriceEnvHint(interval)} Also ensure STRIPE_SECRET_KEY is set.` },
+        {
+          error: `No Stripe price ID for ${interval}ly billing. ${priceHint} ${secretHint}`,
+        },
         { status: 500 },
       );
     }

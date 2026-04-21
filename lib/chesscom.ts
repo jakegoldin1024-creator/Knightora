@@ -101,6 +101,15 @@ const openingKeyMatchers: Record<string, RegExp[]> = {
   kid: [/king'?s indian/i],
   nimzo: [/nimzo-indian/i],
 };
+
+/** Map a Chess.com opening label to a Knightneo catalog key when a pattern matches. */
+export function matchOpeningLabelToCatalogKey(openingLabel: string): string | null {
+  for (const [key, patterns] of Object.entries(openingKeyMatchers)) {
+    if (patterns.some((re) => re.test(openingLabel))) return key;
+  }
+  return null;
+}
+
 const MIN_GAMES_FOR_SCORING = 3;
 const MIN_GAMES_FOR_REASON = 4;
 

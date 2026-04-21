@@ -119,8 +119,8 @@ export function CoachChat() {
   return (
     <div className={styles.wrap}>
       <p className={styles.banner}>
-        Ask about study plans, openings, endgames, or habits. Knightneo links first—external videos only come from our curated list when the coach
-        calls for them.
+        This is your chess conversation: positions you’re confused by, openings you want to play, how to drill, or what to do next in training.
+        Knightneo’s product links come first; outside videos only appear when the coach pulls them from our curated list.
       </p>
 
       <div className={styles.messages} aria-live="polite">

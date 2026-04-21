@@ -114,7 +114,9 @@ export async function analyzeFenWithStockfish(input: {
       await new Promise((r) => setTimeout(r, 40));
     }
     if (!seenUciOk) {
-      throw new Error("Stockfish engine did not initialize (uciok timeout).");
+      throw new Error(
+        "Stockfish did not initialize in time. Check network access to cdn.jsdelivr.net, disable ad blockers for this site, and try again.",
+      );
     }
     engine.postMessage("isready");
     const startedReady = Date.now();
@@ -123,7 +125,9 @@ export async function analyzeFenWithStockfish(input: {
       await new Promise((r) => setTimeout(r, 40));
     }
     if (!seenReadyOk) {
-      throw new Error("Stockfish engine did not become ready (readyok timeout).");
+      throw new Error(
+        "Stockfish did not become ready in time. If you are offline or blocking scripts from jsDelivr, engine analysis cannot run in the browser.",
+      );
     }
     engine.postMessage(`setoption name MultiPV value ${multiPv}`);
     engine.postMessage("ucinewgame");

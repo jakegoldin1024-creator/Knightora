@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buildChessProfile } from "@/lib/chesscom";
-import type { QuizProfile } from "@/lib/recommendations";
+import { parseQuestDayTimezone } from "@/data/quest-timezones";
+import { defaultQuizProfile, type DailyStudyMinutes, type QuizProfile } from "@/lib/recommendations";
 
 export async function GET(request: NextRequest) {
   const username = request.nextUrl.searchParams.get("username")?.trim() ?? "";
@@ -21,8 +22,15 @@ export async function GET(request: NextRequest) {
   }
 }
 
+function validateDailyStudyMinutes(value: string | null): DailyStudyMinutes {
+  const allowed: DailyStudyMinutes[] = [15, 30, 45, 60, 90];
+  const n = Number(value);
+  return allowed.includes(n as DailyStudyMinutes) ? (n as DailyStudyMinutes) : 30;
+}
+
 function parseQuizProfile(searchParams: URLSearchParams): QuizProfile {
   return {
+    ...defaultQuizProfile(),
     rating: validateEnum(searchParams.get("rating"), ["beginner", "developing", "improving", "advanced"], "developing"),
     positionType: validateEnum(searchParams.get("positionType"), ["open", "mixed", "closed"], "mixed"),
     theory: validateEnum(searchParams.get("theory"), ["low", "medium", "high"], "medium"),
@@ -30,6 +38,8 @@ function parseQuizProfile(searchParams: URLSearchParams): QuizProfile {
     timeControl: validateEnum(searchParams.get("timeControl"), ["bullet", "rapid", "classical"], "rapid"),
     goal: validateEnum(searchParams.get("goal"), ["initiative", "clarity", "counterplay"], "clarity"),
     username: searchParams.get("username")?.trim() ?? "",
+    dailyStudyMinutes: validateDailyStudyMinutes(searchParams.get("dailyStudyMinutes")),
+    questDayTimezone: parseQuestDayTimezone(searchParams.get("questDayTimezone")),
   };
 }
 

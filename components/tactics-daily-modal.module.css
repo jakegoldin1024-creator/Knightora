@@ -1,0 +1,152 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.dialog {
+  width: min(520px, 100%);
+  max-height: min(92vh, 720px);
+  overflow: auto;
+  border-radius: 14px;
+  padding: 20px 20px 18px;
+  background: #12141a;
+  color: #e8eaef;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 650;
+}
+
+.close {
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  color: inherit;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.close:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.meta {
+  margin: 0 0 12px;
+  font-size: 0.88rem;
+  opacity: 0.82;
+}
+
+.hint {
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+  color: #b8c4ff;
+}
+
+.boardShell {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.boardGrid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(28px, 40px));
+  grid-template-rows: repeat(8, minmax(28px, 40px));
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.square {
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.squareLight {
+  background: #dee1e6;
+}
+
+.squareDark {
+  background: #8b9aaf;
+}
+
+.squareSelected {
+  outline: 2px solid #5c7cfa;
+  outline-offset: -2px;
+  z-index: 1;
+}
+
+.squareCorrect {
+  background: #2f9e6b !important;
+}
+
+.squareWrong {
+  background: #e03131 !important;
+}
+
+.pieceImg {
+  width: 78%;
+  height: 78%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.pieceGlyph {
+  font-size: clamp(22px, 5vw, 30px);
+  line-height: 1;
+}
+
+.feedback {
+  min-height: 1.25rem;
+  font-size: 0.88rem;
+  margin-bottom: 10px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.button {
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+}
+
+.buttonPrimary {
+  border-color: #5c7cfa;
+  background: #4c6ef5;
+  color: #fff;
+}
+
+.button:hover {
+  filter: brightness(1.06);
+}

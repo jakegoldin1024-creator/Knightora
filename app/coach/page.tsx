@@ -1,17 +1,11 @@
-import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { CoachPage } from "@/components/coach-page";
 
 export const metadata: Metadata = {
-  title: "Coach",
-  description: "Knightneo study coach—training direction and curated resources.",
+  title: "Chess coach",
+  description: "Talk chess with Knightneo’s text coach—openings, habits, and study direction. No sign-in required.",
 };
 
-export default async function CoachRoute() {
-  const { userId } = await auth();
-  if (!userId) {
-    redirect("/sign-in");
-  }
+export default function CoachRoute() {
   return <CoachPage />;
 }

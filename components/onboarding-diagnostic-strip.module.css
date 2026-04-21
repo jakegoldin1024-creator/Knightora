@@ -1,0 +1,124 @@
+.strip {
+  margin: 20px 0 8px;
+  padding: 16px 0 4px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+
+.heading {
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+}
+
+.lede {
+  margin: 0 0 8px;
+  font-size: 0.92rem;
+  opacity: 0.88;
+}
+
+.hint {
+  margin: 0 0 10px;
+  font-size: 0.88rem;
+  color: #364fc7;
+}
+
+.boardShell {
+  display: flex;
+  justify-content: center;
+  margin: 10px 0;
+}
+
+.boardGrid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(26px, 36px));
+  grid-template-rows: repeat(8, minmax(26px, 36px));
+  border: 2px solid rgba(0, 0, 0, 0.12);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.square {
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.squareLight {
+  background: #f1f3f5;
+}
+
+.squareDark {
+  background: #adb5bd;
+}
+
+.squareSelected {
+  outline: 2px solid #4263eb;
+  outline-offset: -2px;
+  z-index: 1;
+}
+
+.squareCorrect {
+  background: #51cf66 !important;
+}
+
+.squareWrong {
+  background: #ff6b6b !important;
+}
+
+.pieceImg {
+  width: 78%;
+  height: 78%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.pieceGlyph {
+  font-size: clamp(20px, 4.5vw, 28px);
+  line-height: 1;
+}
+
+.feedback {
+  min-height: 1.1rem;
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+}
+
+.skip {
+  border: none;
+  background: none;
+  color: #4263eb;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.88rem;
+  padding: 4px 0;
+}
+
+.empty {
+  padding: 12px 0;
+}
+
+.done {
+  padding: 12px 0;
+}
+
+.doneTitle {
+  margin: 0 0 6px;
+  font-weight: 650;
+}
+
+.doneMeta {
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.85;
+}

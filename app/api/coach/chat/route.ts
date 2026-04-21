@@ -3,7 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { convertToModelMessages, safeValidateUIMessages, stepCountIs, streamText, type ToolSet } from "ai";
 import { NextResponse } from "next/server";
 import { KNIGHTNEO_COACH_SYSTEM } from "@/lib/knightneo-coach-system";
-import { checkCoachRateLimit } from "@/lib/coach-rate-limit";
+import { anonymousCoachClientKey, checkCoachRateLimit } from "@/lib/coach-rate-limit";
 import { coachTools } from "@/lib/coach-tools";
 
 const coachToolSet = coachTools as ToolSet;
@@ -12,12 +12,14 @@ export const maxDuration = 60;
 
 export async function POST(req: Request) {
   const { userId } = await auth();
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const rateKey = userId ? `u:${userId}` : anonymousCoachClientKey(req);
+  const rateClient = userId ? "signed" : "anonymous";
 
-  if (!checkCoachRateLimit(userId)) {
-    return NextResponse.json({ error: "Too many requests. Try again in a minute." }, { status: 429 });
+  if (!checkCoachRateLimit(rateKey, rateClient)) {
+    const msg = userId
+      ? "Too many requests. Try again in a minute."
+      : "Too many messages for anonymous use. Sign in for a higher limit, or try again in a minute.";
+    return NextResponse.json({ error: msg }, { status: 429 });
   }
 
   const apiKey = process.env.OPENAI_API_KEY;

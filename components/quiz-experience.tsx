@@ -2,18 +2,41 @@
 
 import { UserButton, useAuth, useClerk, useSession } from "@clerk/nextjs";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type FormEvent } from "react";
 import { filterLessonsForPlan, getTrainingTrack, type TrainingLesson, type TrainingVariation } from "@/data/training";
+import { pickDailyTacticsPuzzles, type DailyPuzzle } from "@/data/daily-puzzles";
+import { QUEST_TIMEZONE_OPTIONS } from "@/data/quest-timezones";
+import { getOnboardingPuzzleSet } from "@/data/onboarding-puzzles";
+import { OnboardingDiagnosticStrip } from "@/components/onboarding-diagnostic-strip";
+import { TacticsDailyModal } from "@/components/tactics-daily-modal";
+import {
+  DEFAULT_TRAINING_PROGRESS,
+  type LessonStat,
+  type SavedDashboard,
+  type TrainingProgress,
+} from "@/lib/account-store";
+import {
+  applyQuestProgressAfterLesson,
+  calendarDayKey,
+  ensureDailyQuestBoard,
+  incrementTacticsQuest,
+} from "@/lib/daily-quests";
+import { normalizeSavedDashboard } from "@/lib/merge-dashboard";
 import { ADMIN_UNLOCK_ENABLED } from "@/lib/admin-unlock";
 import { type SubscriptionPlan, isPaidPlan } from "@/lib/subscription";
 import { buildFenFromKnightneoPlacements, inferSideToMoveFromSource } from "@/lib/board-fen";
 import { getLegalDestinationsForSource, isLegalDestinationForSource } from "@/lib/move-legality";
+import { OpeningPreviewBoard } from "@/components/opening-preview-board";
+import { getNeoPieceSrc, getUnicodePieceGlyph } from "@/lib/neo-board-pieces";
 import { analyzeFenWithStockfish, type StockfishEval } from "@/lib/stockfish-client";
 import type { ChessProfileResponse } from "@/lib/chesscom";
 import {
   describeGoal,
   describeStyle,
+  defaultQuizProfile,
   getRepertoire,
+  type DailyStudyMinutes,
   type Goal,
   type PositionType,
   type QuizProfile,
@@ -25,31 +48,6 @@ import {
   type RatingBand,
 } from "@/lib/recommendations";
 import styles from "./quiz-experience.module.css";
-
-type LessonStat = {
-  attempts: number;
-  correct: number;
-  streak: number;
-  lastReviewed: string | null;
-  dueAt: string | null;
-  ease: number;
-};
-
-type TrainingProgress = {
-  completedLessons: string[];
-  xp: number;
-  streak: number;
-  lastTrainingDate: string | null;
-  lessonStats: Record<string, LessonStat>;
-};
-
-type SavedDashboard = {
-  profile: QuizProfile;
-  repertoire: RepertoireResult;
-  insights: ChessProfileResponse["insights"] | null;
-  savedAt: string;
-  trainingProgress: TrainingProgress;
-};
 
 type AccountUser = {
   id: string;
@@ -131,28 +129,17 @@ const STORAGE_KEY = "knightneo-dashboard-v2";
 const TRAINING_TELEMETRY_KEY = "knightneo-training-telemetry-v1";
 const UX_TELEMETRY_KEY = "knightneo-ux-telemetry-v1";
 
-const initialProfile: QuizProfile = {
-  rating: "developing",
-  positionType: "mixed",
-  theory: "medium",
-  risk: "balanced",
-  timeControl: "rapid",
-  goal: "clarity",
-  username: "",
-};
+const initialProfile: QuizProfile = defaultQuizProfile({ username: "" });
 
-const initialTrainingProgress: TrainingProgress = {
-  completedLessons: [],
-  xp: 0,
-  streak: 0,
-  lastTrainingDate: null,
-  lessonStats: {},
-};
+const initialTrainingProgress: TrainingProgress = DEFAULT_TRAINING_PROGRESS;
 
 export function QuizExperience() {
   const { isLoaded, isSignedIn, userId } = useAuth();
   const { signOut } = useClerk();
   const { session } = useSession();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
 
   const [profile, setProfile] = useState<QuizProfile>(initialProfile);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
@@ -184,6 +171,9 @@ export function QuizExperience() {
   const [endlessMode, setEndlessMode] = useState(false);
   const [showQuizForm, setShowQuizForm] = useState(false);
   const [showPickExtras, setShowPickExtras] = useState(false);
+  const [diagnosticSummary, setDiagnosticSummary] = useState<{ attempted: number; correct: number } | null>(null);
+  const [tacticsModalOpen, setTacticsModalOpen] = useState(false);
+  const [tacticsSessionPuzzles, setTacticsSessionPuzzles] = useState<DailyPuzzle[]>([]);
   const [dashboardTab, setDashboardTab] = useState<"overview" | "openings" | "training">("overview");
   const [chapterCelebration, setChapterCelebration] = useState<string | null>(null);
   const [reduceMotion, setReduceMotion] = useState(false);
@@ -199,6 +189,7 @@ export function QuizExperience() {
   });
 
   const fallbackRepertoire = useMemo(() => getRepertoire(profile), [profile]);
+  const onboardingPuzzles = useMemo(() => getOnboardingPuzzleSet(profile.rating), [profile.rating]);
   const activeDashboard = savedDashboard;
   const selectedPlan = accountUser?.subscriptionPlan ?? guestSubscriptionPlan;
   const trainingTracks = useMemo(
@@ -230,6 +221,41 @@ export function QuizExperience() {
     [profile, recommendedVariation],
   );
   const progress = activeDashboard?.trainingProgress ?? initialTrainingProgress;
+
+  useEffect(() => {
+    if (!hydrated || !activeDashboard) return;
+    const day = calendarDayKey(new Date(), activeDashboard.profile.questDayTimezone ?? "UTC");
+    const qp = activeDashboard.questProgress;
+    const needsBoard = !qp || qp.dayKey !== day || !qp.quests?.length;
+    if (!needsBoard) return;
+    const due = countDueLessons(trainingTracks, activeDashboard.trainingProgress.lessonStats);
+    const light = qp?.dayKey === day ? qp.lightMode : Boolean(activeDashboard.profile.prefersLightDaysDefault);
+    setSavedDashboard((d) => {
+      if (!d) return d;
+      return ensureDailyQuestBoard(d, {
+        isPaidPlan: isPaidPlan(selectedPlan),
+        lightMode: light,
+        dueLessonCount: due,
+      });
+    });
+  }, [hydrated, activeDashboard, trainingTracks, selectedPlan]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    if (searchParams.get("focus") !== "today") return;
+    setDashboardTab("overview");
+    window.setTimeout(() => {
+      document.getElementById("dashboard")?.scrollIntoView({
+        behavior: reduceMotion ? "auto" : "smooth",
+        block: "start",
+      });
+    }, 80);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("focus");
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }, [hydrated, searchParams, pathname, router, reduceMotion]);
+
   const weeklyCompletedCount = useMemo(() => {
     const since = new Date();
     since.setDate(since.getDate() - 7);
@@ -298,14 +324,20 @@ export function QuizExperience() {
   }
 
   useEffect(() => {
+    setDiagnosticSummary(null);
+  }, [profile.rating]);
+
+  useEffect(() => {
     setHydrated(true);
 
     try {
       const saved = window.localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        const parsed = JSON.parse(saved) as SavedDashboard;
-        setSavedDashboard(parsed);
-        setProfile(parsed.profile);
+        const parsed = normalizeSavedDashboard(JSON.parse(saved));
+        if (parsed) {
+          setSavedDashboard(parsed);
+          setProfile(parsed.profile);
+        }
       }
     } catch {
       window.localStorage.removeItem(STORAGE_KEY);
@@ -458,9 +490,8 @@ export function QuizExperience() {
       const lastStep = steps[lastUserIdx];
       if (!lastStep) return;
       setSavedDashboard((d) => {
-        if (!d) return d;
-        const nextProgress = applyLessonAttempt(d.trainingProgress, activeLesson.id, true);
-        return { ...d, trainingProgress: nextProgress, savedAt: new Date().toISOString() };
+        if (!d || !activeTrack) return d;
+        return commitLessonAfterAttempt(d, activeTrack.id, activeLesson.id, true);
       });
       setTrainingSession((current) => ({
         ...current,
@@ -565,8 +596,11 @@ export function QuizExperience() {
           setAccountUser(payload.user);
           setGuestSubscriptionPlan(payload.user.subscriptionPlan);
           if (payload.dashboard) {
-            setSavedDashboard(payload.dashboard);
-            setProfile(payload.dashboard.profile);
+            const parsed = normalizeSavedDashboard(payload.dashboard);
+            if (parsed) {
+              setSavedDashboard(parsed);
+              setProfile(parsed.profile);
+            }
           }
         }
       } catch {
@@ -599,8 +633,11 @@ export function QuizExperience() {
       setGuestSubscriptionPlan(payload.user.subscriptionPlan);
 
       if (payload.dashboard) {
-        setSavedDashboard(payload.dashboard);
-        setProfile(payload.dashboard.profile);
+        const parsed = normalizeSavedDashboard(payload.dashboard);
+        if (parsed) {
+          setSavedDashboard(parsed);
+          setProfile(parsed.profile);
+        }
       }
     } catch {
       setAccountError("Unable to load account state. Refresh and try again.");
@@ -615,22 +652,39 @@ export function QuizExperience() {
     event.preventDefault();
     setAnalysisError(null);
 
-    if (!profile.username?.trim()) {
-      const dashboard = buildDashboard(profile, fallbackRepertoire, null, progress);
+    const profileForSave: QuizProfile = {
+      ...profile,
+      puzzleDiagnostic: diagnosticSummary
+        ? {
+            version: 1,
+            attempted: diagnosticSummary.attempted,
+            correct: diagnosticSummary.correct,
+            finishedAt: new Date().toISOString(),
+          }
+        : profile.puzzleDiagnostic,
+    };
+
+    if (!profileForSave.username?.trim()) {
+      const dashboard = buildDashboard(profileForSave, fallbackRepertoire, null, progress, undefined);
       setSavedDashboard(dashboard);
+      setProfile(profileForSave);
       goToOpeningsAfterRepertoireBuild();
       return;
     }
 
     const query = new URLSearchParams({
-      username: profile.username.trim(),
-      rating: profile.rating,
-      positionType: profile.positionType,
-      theory: profile.theory,
-      risk: profile.risk,
-      timeControl: profile.timeControl,
-      goal: profile.goal,
+      username: profileForSave.username.trim(),
+      rating: profileForSave.rating,
+      positionType: profileForSave.positionType,
+      theory: profileForSave.theory,
+      risk: profileForSave.risk,
+      timeControl: profileForSave.timeControl,
+      goal: profileForSave.goal,
+      dailyStudyMinutes: String(profileForSave.dailyStudyMinutes),
     });
+    if (profileForSave.questDayTimezone) {
+      query.set("questDayTimezone", profileForSave.questDayTimezone);
+    }
 
     setIsPending(true);
 
@@ -643,7 +697,8 @@ export function QuizExperience() {
       }
 
       const resolved = payload as ChessProfileResponse;
-      setSavedDashboard(buildDashboard(profile, resolved.repertoire, resolved.insights, progress));
+      setSavedDashboard(buildDashboard(profileForSave, resolved.repertoire, resolved.insights, progress, undefined));
+      setProfile(profileForSave);
       goToOpeningsAfterRepertoireBuild();
     } catch (error) {
       const message =
@@ -651,7 +706,8 @@ export function QuizExperience() {
           ? error.message
           : "We could not analyze that Chess.com account, so Knightneo fell back to quiz-only recommendations.";
       setAnalysisError(message);
-      setSavedDashboard(buildDashboard(profile, fallbackRepertoire, null, progress));
+      setSavedDashboard(buildDashboard(profileForSave, fallbackRepertoire, null, progress, undefined));
+      setProfile(profileForSave);
       goToOpeningsAfterRepertoireBuild();
     } finally {
       setIsPending(false);
@@ -678,7 +734,8 @@ export function QuizExperience() {
     }
 
     if (payload.dashboard) {
-      setSavedDashboard(payload.dashboard);
+      const parsed = normalizeSavedDashboard(payload.dashboard);
+      if (parsed) setSavedDashboard(parsed);
     }
   }
 
@@ -773,7 +830,9 @@ export function QuizExperience() {
       setEngineStatus(best ? "Stockfish analysis ready." : "No analysis produced.");
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Stockfish failed to analyze.";
-      setEngineStatus(msg);
+      setEngineStatus(
+        `${msg} If this keeps happening, check your network, disable ad blockers for this page, and ensure cdn.jsdelivr.net can load.`,
+      );
     }
   }
 
@@ -887,13 +946,9 @@ export function QuizExperience() {
         return;
       }
 
-      const nextProgress = applyLessonAttempt(activeDashboard.trainingProgress, activeLesson.id, isCorrect);
+      if (!activeTrack) return;
       recordTrainingTelemetry(activeLesson.id, isCorrect);
-      const nextDashboard = {
-        ...activeDashboard,
-        trainingProgress: nextProgress,
-        savedAt: new Date().toISOString(),
-      };
+      const nextDashboard = commitLessonAfterAttempt(activeDashboard, activeTrack.id, activeLesson.id, isCorrect);
       setSavedDashboard(nextDashboard);
       setTrainingSession((current) => ({
         ...current,
@@ -905,13 +960,9 @@ export function QuizExperience() {
 
     if (activeLesson.board) {
       const isCorrect = answer === activeLesson.board.targetSquare;
-      const nextProgress = applyLessonAttempt(activeDashboard.trainingProgress, activeLesson.id, isCorrect);
+      if (!activeTrack) return;
       recordTrainingTelemetry(activeLesson.id, isCorrect);
-      const nextDashboard = {
-        ...activeDashboard,
-        trainingProgress: nextProgress,
-        savedAt: new Date().toISOString(),
-      };
+      const nextDashboard = commitLessonAfterAttempt(activeDashboard, activeTrack.id, activeLesson.id, isCorrect);
       setSavedDashboard(nextDashboard);
       setTrainingSession((current) => ({
         ...current,
@@ -922,13 +973,9 @@ export function QuizExperience() {
     }
 
     const isCorrect = answer === activeLesson.answer;
-    const nextProgress = applyLessonAttempt(activeDashboard.trainingProgress, activeLesson.id, isCorrect);
+    if (!activeTrack) return;
     recordTrainingTelemetry(activeLesson.id, isCorrect);
-    const nextDashboard = {
-      ...activeDashboard,
-      trainingProgress: nextProgress,
-      savedAt: new Date().toISOString(),
-    };
+    const nextDashboard = commitLessonAfterAttempt(activeDashboard, activeTrack.id, activeLesson.id, isCorrect);
 
     setSavedDashboard(nextDashboard);
     setTrainingSession((current) => ({
@@ -1086,6 +1133,76 @@ export function QuizExperience() {
     jumpToLessonIndex(nextChapterLessonIndex);
   }
 
+  const openTacticsSession = useCallback(async () => {
+    if (!activeDashboard) return;
+    setAccountError(null);
+    const tacticQuest = activeDashboard.questProgress?.quests.find((q) => q.kind === "tactics");
+    const n = tacticQuest?.target ?? 3;
+    let list: DailyPuzzle[] = [];
+    try {
+      const response = await fetch(`/api/puzzles/batch?count=${n}`);
+      if (response.ok) {
+        const payload = (await response.json()) as { puzzles?: DailyPuzzle[] };
+        const remote = payload.puzzles ?? [];
+        if (remote.length >= n) {
+          list = remote.slice(0, n);
+        } else if (remote.length > 0) {
+          list = [
+            ...remote,
+            ...pickDailyTacticsPuzzles(activeDashboard.profile.rating, activeDashboard.profile.puzzleDiagnostic, n - remote.length),
+          ];
+        }
+      }
+    } catch {
+      // fall through to static pool
+    }
+    if (!list.length) {
+      list = pickDailyTacticsPuzzles(activeDashboard.profile.rating, activeDashboard.profile.puzzleDiagnostic, n);
+    }
+    if (!list.length) {
+      setAccountError("No tactics puzzles available for this profile yet — try again after onboarding.");
+      return;
+    }
+    setTacticsSessionPuzzles(list);
+    setTacticsModalOpen(true);
+  }, [activeDashboard]);
+
+  const handleTacticsPuzzleSolved = useCallback(() => {
+    setSavedDashboard((d) => (d ? incrementTacticsQuest(d) : d));
+  }, []);
+
+  function toggleLightDayQuests() {
+    if (!activeDashboard) return;
+    const due = countDueLessons(trainingTracks, activeDashboard.trainingProgress.lessonStats);
+    const day = calendarDayKey(new Date(), activeDashboard.profile.questDayTimezone ?? "UTC");
+    const currentLight =
+      activeDashboard.questProgress?.dayKey === day
+        ? activeDashboard.questProgress.lightMode
+        : Boolean(activeDashboard.profile.prefersLightDaysDefault);
+    setSavedDashboard(
+      ensureDailyQuestBoard(activeDashboard, {
+        isPaidPlan: isPaidPlan(selectedPlan),
+        lightMode: !currentLight,
+        dueLessonCount: due,
+      }),
+    );
+  }
+
+  function rerollPaidQuests() {
+    if (!activeDashboard) return;
+    const due = countDueLessons(trainingTracks, activeDashboard.trainingProgress.lessonStats);
+    const qp = activeDashboard.questProgress;
+    if (!qp) return;
+    setSavedDashboard(
+      ensureDailyQuestBoard(activeDashboard, {
+        isPaidPlan: isPaidPlan(selectedPlan),
+        lightMode: qp.lightMode,
+        dueLessonCount: due,
+        reroll: true,
+      }),
+    );
+  }
+
   if (!hydrated) {
     return (
       <div className={styles.pageShell}>
@@ -1119,8 +1236,14 @@ export function QuizExperience() {
             <Link href="/quiz" className={styles.ghostLink}>
               Quiz
             </Link>
+            <Link href="/today" className={styles.ghostLink}>
+              Today
+            </Link>
             <Link href="/analysis" className={styles.ghostLink}>
               Analysis
+            </Link>
+            <Link href="/coach" className={styles.ghostLink}>
+              Chess coach
             </Link>
             {activeDashboard ? (
               <a href="#dashboard" className={styles.ghostLink}>
@@ -1184,7 +1307,7 @@ export function QuizExperience() {
         {!activeDashboard || showQuizForm ? (
         <section id="quiz" className={styles.panel}>
           <div className={styles.sectionHeading}>
-            <p className={styles.eyebrow}>Style quiz</p>
+            <p className={styles.eyebrow}>Onboarding</p>
             <h2>Build your repertoire</h2>
           </div>
 
@@ -1260,7 +1383,63 @@ export function QuizExperience() {
             />
 
             <div className={styles.questionBlock}>
-              <p>6. Optional Chess.com username</p>
+              <label htmlFor="dailyStudyMinutes">6. Realistic study time per day</label>
+              <p className={styles.resultsSummaryMuted} style={{ marginTop: 4 }}>
+                Drives how many daily quests and tactics we suggest (you can still use a &quot;light day&quot; on the dashboard).
+              </p>
+              <select
+                id="dailyStudyMinutes"
+                value={profile.dailyStudyMinutes}
+                onChange={(event) => updateField("dailyStudyMinutes", Number(event.target.value) as DailyStudyMinutes)}
+              >
+                <option value={15}>15 minutes</option>
+                <option value={30}>30 minutes</option>
+                <option value={45}>45 minutes</option>
+                <option value={60}>60 minutes</option>
+                <option value={90}>90 minutes</option>
+              </select>
+            </div>
+
+            <div className={styles.questionBlock}>
+              <label htmlFor="questDayTimezone">Quest calendar timezone</label>
+              <p className={styles.resultsSummaryMuted} style={{ marginTop: 4 }}>
+                Daily quests use midnight in this IANA zone to start a new day (UTC is the default).
+              </p>
+              <select
+                id="questDayTimezone"
+                value={profile.questDayTimezone ?? "UTC"}
+                onChange={(event) => {
+                  const v = event.target.value;
+                  updateField("questDayTimezone", v === "UTC" ? undefined : v);
+                }}
+              >
+                {QUEST_TIMEZONE_OPTIONS.map((tz) => (
+                  <option key={tz} value={tz}>
+                    {tz}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className={styles.questionBlock}>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={Boolean(profile.prefersLightDaysDefault)}
+                  onChange={(event) => updateField("prefersLightDaysDefault", event.target.checked)}
+                />{" "}
+                Prefer light daily quests by default (smaller board — you can toggle per day)
+              </label>
+            </div>
+
+            <OnboardingDiagnosticStrip
+              key={`diag-${profile.rating}`}
+              puzzles={onboardingPuzzles}
+              onComplete={(summary) => setDiagnosticSummary(summary)}
+            />
+
+            <div className={styles.questionBlock}>
+              <p>7. Optional Chess.com username</p>
               <label htmlFor="username" className={styles.assistiveLabel}>
                 Knightneo will blend recent public games into the recommendation and training path.
               </label>
@@ -1275,7 +1454,10 @@ export function QuizExperience() {
                 Back to training
               </button>
             ) : null}
-            <p style={{ marginTop: 10, opacity: 0.85 }}>Sign in to sync progress across devices. Training requires an active subscription.</p>
+            <p style={{ marginTop: 10, opacity: 0.85 }}>
+              Sign in to sync progress across devices. Core opening training runs on the free tier; subscriptions unlock deeper branches, Stockfish on
+              lessons, and full-game analysis.
+            </p>
           </form>
         </section>
         ) : null}
@@ -1290,11 +1472,11 @@ export function QuizExperience() {
               <nav className={styles.flowRibbon} aria-label="Prep journey">
                 <ol className={styles.flowRibbonList}>
                   {[
-                    { n: 1, label: "Quiz" },
-                    { n: 2, label: "Your lines" },
-                    { n: 3, label: "Pick opening" },
-                    { n: 4, label: "Hone line" },
-                    { n: 5, label: "Drills" },
+                    { n: 1, label: "Onboarding" },
+                    { n: 2, label: "Suggested openings" },
+                    { n: 3, label: "Pick track" },
+                    { n: 4, label: "Branch on board" },
+                    { n: 5, label: "Lesson drills" },
                   ].map((step) => {
                     const done = prepFlowStep > step.n;
                     const current = prepFlowStep === step.n;
@@ -1346,6 +1528,91 @@ export function QuizExperience() {
               </article>
             </div>
 
+            {activeDashboard.questProgress &&
+            activeDashboard.questProgress.dayKey ===
+              calendarDayKey(new Date(), activeDashboard.profile.questDayTimezone ?? "UTC") ? (
+              <div className={styles.statusCard}>
+                <p className={styles.statusTitle}>
+                  Today&apos;s quests ({activeDashboard.profile.questDayTimezone ?? "UTC"} calendar)
+                </p>
+                <p className={styles.resultsSummaryMuted} style={{ marginTop: 0 }}>
+                  Quests reset at midnight in your quest timezone. Light day halves targets — good for recovery sessions.
+                </p>
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 10, margin: "12px 0 16px", cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={activeDashboard.questProgress.lightMode}
+                    onChange={toggleLightDayQuests}
+                    style={{ marginTop: 3 }}
+                  />
+                  <span>Light day (regenerates today&apos;s board with smaller targets)</span>
+                </label>
+                {isPaidPlan(selectedPlan) ? (
+                  <div style={{ marginBottom: 14 }}>
+                    <button
+                      type="button"
+                      className={`${styles.button} ${styles.buttonSecondary}`}
+                      onClick={rerollPaidQuests}
+                      disabled={(activeDashboard.questProgress.rerollsUsed ?? 0) >= 1}
+                    >
+                      Reroll today&apos;s quests (paid · once per day)
+                    </button>
+                    {(activeDashboard.questProgress.rerollsUsed ?? 0) >= 1 ? (
+                      <p className={styles.resultsSummaryMuted} style={{ marginTop: 6 }}>
+                        Reroll used for this calendar day.
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+                <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14 }}>
+                  {activeDashboard.questProgress.quests.map((q) => {
+                    const pct = q.target > 0 ? Math.min(100, Math.round((q.progress / q.target) * 100)) : 0;
+                    return (
+                      <li key={q.id}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "baseline" }}>
+                          <strong>{q.title}</strong>
+                          <span style={{ fontSize: "0.88rem", opacity: 0.85 }}>
+                            {q.progress}/{q.target} · +{q.xpReward} XP {q.completed ? "· done" : ""}
+                          </span>
+                        </div>
+                        <p style={{ margin: "4px 0 6px", fontSize: "0.9rem", opacity: 0.88 }}>{q.description}</p>
+                        <div
+                          style={{
+                            height: 8,
+                            borderRadius: 999,
+                            background: "rgba(0,0,0,0.08)",
+                            overflow: "hidden",
+                          }}
+                        >
+                          <div style={{ width: `${pct}%`, height: "100%", background: q.completed ? "#2f9e6b" : "#4c6ef5" }} />
+                        </div>
+                        <div style={{ marginTop: 8 }}>
+                          {q.kind === "tactics" && !q.completed ? (
+                            <button type="button" className={`${styles.button} ${styles.buttonPrimary}`} onClick={() => void openTacticsSession()}>
+                              Open tactics session
+                            </button>
+                          ) : null}
+                          {q.kind !== "tactics" && !q.completed ? (
+                            <button
+                              type="button"
+                              className={`${styles.button} ${styles.buttonSecondary}`}
+                              onClick={() => {
+                                setDashboardTab("training");
+                                setTrainingUiPhase("pick");
+                                scrollDashboardIntoView();
+                              }}
+                            >
+                              Go to training
+                            </button>
+                          ) : null}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ) : null}
+
             <div className={styles.resultsSummary}>
               <p>
                 <strong>{describeStyle(activeDashboard.profile)}</strong> · {describeGoal(activeDashboard.profile.goal)}
@@ -1360,7 +1627,17 @@ export function QuizExperience() {
                 <button type="button" className={`${styles.button} ${styles.buttonPrimary}`} onClick={startNextAssignedLesson}>
                   Continue training
                 </button>
-                <button type="button" className={`${styles.button} ${styles.buttonSecondary}`} onClick={() => setShowQuizForm(true)}>
+                <button
+                  type="button"
+                  className={`${styles.button} ${styles.buttonSecondary}`}
+                  onClick={() => {
+                    if (activeDashboard) {
+                      setProfile({ ...defaultQuizProfile(), ...activeDashboard.profile });
+                    }
+                    setDiagnosticSummary(null);
+                    setShowQuizForm(true);
+                  }}
+                >
                   Edit quiz answers
                 </button>
               </div>
@@ -1741,10 +2018,10 @@ export function QuizExperience() {
                             <span className={styles.lessonTag}>Line fundamentals</span>
                             <span className={styles.lessonTagMuted}>{activeTrack.opening.name}</span>
                           </div>
-                          <h4 className={styles.lessonTitle}>Four ways into the same opening</h4>
+                          <h4 className={styles.lessonTitle}>See each branch on the board</h4>
                           <p className={styles.lessonPrompt}>
-                            Open a card and read slowly—these aren’t trivia blurbs. You’re choosing the personality of your prep: calm, balanced,
-                            sharp, or max depth.
+                            Open a card: the mini-board shows the tabiya after the first moves of that branch. Read the plan text, then continue to
+                            pick the line you want to drill.
                           </p>
                           <div className={styles.variationGrid}>
                             {(activeTrack.variations ?? []).map((variation) => (
@@ -1755,23 +2032,36 @@ export function QuizExperience() {
                                     {variation.style} · {variation.risk} risk
                                   </span>
                                 </summary>
-                                <p>{variation.summary}</p>
-                                <p className={styles.variationMeta}>
-                                  {variation.theoryLoad} theory · {variation.timeControlFit}
-                                </p>
-                                <p className={styles.variationMeta}>{variation.tempo}</p>
-                                <p className={styles.variationMeta}>{variation.sampleLine}</p>
-                                <ul className={styles.openingReasonList}>
-                                  {variation.middlegamePlans.slice(0, 2).map((plan) => (
-                                    <li key={`${variation.id}-${plan}`}>{plan}</li>
-                                  ))}
-                                </ul>
+                                <div className={styles.variationPrimerBody}>
+                                  {variation.previewFen ? (
+                                    <div className={styles.variationPreviewAside}>
+                                      <OpeningPreviewBoard
+                                        fen={variation.previewFen}
+                                        orientation={activeTrack.id === "white" ? "white" : "black"}
+                                        movesCaption={variation.previewMovesSan ? `First plies: ${variation.previewMovesSan}` : undefined}
+                                      />
+                                    </div>
+                                  ) : null}
+                                  <div className={styles.variationPrimerCopy}>
+                                    <p>{variation.summary}</p>
+                                    <p className={styles.variationMeta}>
+                                      {variation.theoryLoad} theory · {variation.timeControlFit}
+                                    </p>
+                                    <p className={styles.variationMeta}>{variation.tempo}</p>
+                                    <p className={styles.variationMeta}>{variation.sampleLine}</p>
+                                    <ul className={styles.openingReasonList}>
+                                      {variation.middlegamePlans.slice(0, 2).map((plan) => (
+                                        <li key={`${variation.id}-${plan}`}>{plan}</li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                </div>
                               </details>
                             ))}
                           </div>
                           <div className={styles.lessonCompleteActions}>
                             <button type="button" className={`${styles.button} ${styles.buttonPrimary}`} onClick={continueToVariationSelection}>
-                              Lock in a branch
+                              Next: choose your branch
                             </button>
                           </div>
                         </div>
@@ -1781,7 +2071,10 @@ export function QuizExperience() {
                             <span className={styles.lessonTag}>Variation choice</span>
                             <span className={styles.lessonTagMuted}>{activeTrack.opening.name}</span>
                           </div>
-                          <h4 className={styles.lessonTitle}>Pick the branch you’ll actually drill</h4>
+                          <h4 className={styles.lessonTitle}>Pick the branch you’ll drill</h4>
+                          <p className={styles.lessonPrompt}>
+                            Each card shows the same tabiya you previewed—tap the line that matches how you want to play this opening.
+                          </p>
                           {recommendedVariation ? (
                             <div className={styles.variationRecommended}>
                               <p className={styles.statusTitle}>We’d start you here</p>
@@ -1806,13 +2099,24 @@ export function QuizExperience() {
                                   className={`${styles.variationCard} ${isSelected ? styles.variationCardSelected : ""}`}
                                   onClick={() => applyVariationSelection(variation.id)}
                                 >
-                                  <p className={styles.statusTitle}>{variation.label}</p>
-                                  <p>{variation.summary}</p>
-                                  <p className={styles.variationMeta}>
-                                    {variation.style} · {variation.risk} risk · {variation.theoryLoad} theory
-                                  </p>
-                                  <p className={styles.variationMeta}>{variation.tempo}</p>
-                                  <p className={styles.variationMeta}>{variation.timeControlFit}</p>
+                                  <div className={styles.variationCardInner}>
+                                    <div className={styles.variationCardBody}>
+                                      <p className={styles.statusTitle}>{variation.label}</p>
+                                      <p>{variation.summary}</p>
+                                      <p className={styles.variationMeta}>
+                                        {variation.style} · {variation.risk} risk · {variation.theoryLoad} theory
+                                      </p>
+                                      <p className={styles.variationMeta}>{variation.tempo}</p>
+                                      <p className={styles.variationMeta}>{variation.timeControlFit}</p>
+                                    </div>
+                                    {variation.previewFen ? (
+                                      <OpeningPreviewBoard
+                                        fen={variation.previewFen}
+                                        orientation={activeTrack.id === "white" ? "white" : "black"}
+                                        movesCaption={variation.previewMovesSan ? `First plies: ${variation.previewMovesSan}` : undefined}
+                                      />
+                                    ) : null}
+                                  </div>
                                 </button>
                               );
                             })}
@@ -1820,7 +2124,15 @@ export function QuizExperience() {
                           <div className={styles.lessonCompleteActions}>
                             {selectedVariation ? (
                               <p className={styles.lessonCompleteHint}>
-                                You picked <strong>{selectedVariation.label}</strong> because it matches your current quiz profile and preferred game tempo.
+                                {recommendedVariation && selectedVariation.id === recommendedVariation.id ? (
+                                  <>
+                                    You picked <strong>{selectedVariation.label}</strong> — it aligns with your quiz profile and tempo.
+                                  </>
+                                ) : (
+                                  <>
+                                    You picked <strong>{selectedVariation.label}</strong>. Drills will follow the lessons mapped to this branch.
+                                  </>
+                                )}
                               </p>
                             ) : null}
                             <button type="button" className={`${styles.button} ${styles.buttonPrimary}`} onClick={startCourseFromVariation}>
@@ -2009,6 +2321,12 @@ export function QuizExperience() {
             {/* roadmap intentionally hidden from core flow to reduce scroll and confusion */}
           </section>
         ) : null}
+        <TacticsDailyModal
+          open={tacticsModalOpen}
+          puzzles={tacticsSessionPuzzles}
+          onClose={() => setTacticsModalOpen(false)}
+          onSolvedPuzzle={handleTacticsPuzzleSolved}
+        />
       </main>
     </div>
   );
@@ -2540,42 +2858,24 @@ function fromCoords(file: number, rank: number) {
   return `${String.fromCharCode("a".charCodeAt(0) + file)}${rank + 1}`;
 }
 
-function getNeoPieceSrc(piece: string) {
-  const normalized = piece === piece.toUpperCase() ? `w${piece.toLowerCase()}` : `b${piece}`;
-  return `/pieces/neo/${normalized}.png`;
-}
-
-function getUnicodePieceGlyph(piece: string): string {
-  const table: Record<string, string> = {
-    K: "♔",
-    Q: "♕",
-    R: "♖",
-    B: "♗",
-    N: "♘",
-    P: "♙",
-    k: "♚",
-    q: "♛",
-    r: "♜",
-    b: "♝",
-    n: "♞",
-    p: "♟",
-  };
-  return table[piece] ?? "";
-}
-
 function buildDashboard(
   profile: QuizProfile,
   repertoire: RepertoireResult,
   insights: ChessProfileResponse["insights"] | null,
   trainingProgress: TrainingProgress,
+  questProgress?: SavedDashboard["questProgress"],
 ): SavedDashboard {
-  return {
+  const dash: SavedDashboard = {
     profile,
     repertoire,
     insights,
     savedAt: new Date().toISOString(),
     trainingProgress,
   };
+  if (questProgress !== undefined) {
+    dash.questProgress = questProgress ?? null;
+  }
+  return dash;
 }
 
 function getCourseLessonsForVariation(lessons: TrainingLesson[], variationId: string | null): TrainingLesson[] {
@@ -2682,6 +2982,28 @@ function getWeakLessonEntries(stats: Record<string, LessonStat>) {
     }))
     .filter((s) => s.attempts >= 2)
     .sort((a, b) => a.accuracy - b.accuracy || b.attempts - a.attempts);
+}
+
+function commitLessonAfterAttempt(
+  dashboard: SavedDashboard,
+  trackId: string,
+  lessonId: string,
+  wasCorrect: boolean,
+): SavedDashboard {
+  const normalizedTrack: "white" | "black-e4" | "black-d4" =
+    trackId === "white" || trackId === "black-e4" || trackId === "black-d4" ? trackId : "white";
+  const statsBefore = dashboard.trainingProgress.lessonStats[lessonId];
+  const newlyCompleting = wasCorrect && !dashboard.trainingProgress.completedLessons.includes(lessonId);
+  const trainingProgress = applyLessonAttempt(dashboard.trainingProgress, lessonId, wasCorrect);
+  let next: SavedDashboard = { ...dashboard, trainingProgress, savedAt: new Date().toISOString() };
+  next = applyQuestProgressAfterLesson(next, {
+    trackId: normalizedTrack,
+    lessonId,
+    wasCorrect,
+    statsBefore,
+    newlyCompleting,
+  });
+  return next;
 }
 
 function applyLessonAttempt(progress: TrainingProgress, lessonId: string, wasCorrect: boolean): TrainingProgress {

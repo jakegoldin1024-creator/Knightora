@@ -8,6 +8,16 @@ export type RiskLevel = "sharp" | "balanced" | "solid";
 export type TimeControl = "bullet" | "rapid" | "classical";
 export type Goal = "initiative" | "clarity" | "counterplay";
 
+/** Minutes per day the user commits to study—drives daily quest budgets. */
+export type DailyStudyMinutes = 15 | 30 | 45 | 60 | 90;
+
+export type PuzzleDiagnostic = {
+  version: 1;
+  attempted: number;
+  correct: number;
+  finishedAt: string;
+};
+
 export type QuizProfile = {
   rating: RatingBand;
   positionType: PositionType;
@@ -16,6 +26,15 @@ export type QuizProfile = {
   timeControl: TimeControl;
   goal: Goal;
   username?: string;
+  dailyStudyMinutes: DailyStudyMinutes;
+  /** Result of onboarding puzzle strip; null until completed. */
+  puzzleDiagnostic: PuzzleDiagnostic | null;
+  /** When true, new daily quest boards default to light mode until toggled off. */
+  prefersLightDaysDefault?: boolean;
+  /**
+   * IANA timezone for quest calendar day (e.g. America/Los_Angeles). Omit or "UTC" for UTC day boundaries.
+   */
+  questDayTimezone?: string;
 };
 
 export type RankedOpening = Opening & {
@@ -29,6 +48,22 @@ export type RepertoireResult = {
   blackE4: RankedOpening;
   blackD4: RankedOpening;
 };
+
+/** Defaults for new users and migration of saved dashboards. */
+export function defaultQuizProfile(overrides: Partial<QuizProfile> = {}): QuizProfile {
+  return {
+    rating: "developing",
+    positionType: "mixed",
+    theory: "medium",
+    risk: "balanced",
+    timeControl: "rapid",
+    goal: "clarity",
+    dailyStudyMinutes: 30,
+    puzzleDiagnostic: null,
+    prefersLightDaysDefault: false,
+    ...overrides,
+  };
+}
 
 type RepertoireLane = "white" | "blackE4" | "blackD4";
 

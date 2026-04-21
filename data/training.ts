@@ -1,3 +1,4 @@
+import { Chess } from "chess.js";
 import type { SubscriptionPlan } from "@/lib/subscription";
 import type { OpeningLine } from "@/lib/opening-line";
 import { buildOpeningLineFromSanMoves } from "@/lib/opening-line";
@@ -58,6 +59,10 @@ export type TrainingVariation = {
   sampleLine: string;
   timeControlFit: string;
   commonMistakes: string[];
+  /** Tabiya after the first plies of the branch line — shown in branch picker UI. */
+  previewFen?: string;
+  /** SAN list matching the preview position (first N plies of that branch). */
+  previewMovesSan?: string;
 };
 
 export type TrainingTrack = {
@@ -130,6 +135,17 @@ export const trainingCatalog: Record<string, TrainingTrack> = {
         choices: ["Piece activity", "Early queen raids", "Pawn storms on both wings"],
         answer: "Piece activity",
         explanation: "Knightneo wants this opening learned through plans first: active pieces, center control, then attack timing.",
+      },
+      {
+        id: "italian-3",
+        title: "Slow Italian tabiya",
+        focus: "Center tension",
+        prompt:
+          "After `1.e4 e5 2.Nf3 Nc6 3.Bc4 Bc5 4.c3 Nf6 5.d3 d6 6.O-O O-O 7.Re1 Bd7`, what is White’s most common next developing step before breaking in the center?",
+        choices: ["Nbd2 (or Nc3-d2 routes)", "Immediate f4", "Qh5"],
+        answer: "Nbd2 (or Nc3-d2 routes)",
+        explanation:
+          "In the slow Italian, White often improves the queen’s knight (Nbd2) to support f1 ideas, e4 stability, or a later d4 break—without blocking the light-squared bishop.",
       },
     ],
   },
@@ -908,8 +924,38 @@ function buildTrackIntro(openingKey: string, modules: string[]): TrainingTrackIn
   };
 }
 
+function fenAfterSanMoves(moves: string[] | undefined, maxPlies: number): { fen: string; label: string } | null {
+  if (!moves?.length) return null;
+  const chess = new Chess();
+  const n = Math.min(maxPlies, moves.length);
+  for (let i = 0; i < n; i++) {
+    if (!chess.move(moves[i])) return null;
+  }
+  return { fen: chess.fen(), label: moves.slice(0, n).join(" ") };
+}
+
+function branchPreviewsForOpening(openingKey: string): Partial<Record<string, { previewFen: string; previewMovesSan: string }>> {
+  const main = MAIN_LINE_MOVES[openingKey];
+  const starter = STARTER_EXTRA_LINE_MOVES[openingKey];
+  const club = CLUB_EXTRA_LINE_MOVES[openingKey];
+  const pro = PRO_EXTRA_LINE_MOVES[openingKey];
+  const out: Partial<Record<string, { previewFen: string; previewMovesSan: string }>> = {};
+  const put = (id: string, seq: string[] | undefined, plies: number) => {
+    if (!seq?.length) return;
+    const c = fenAfterSanMoves(seq, Math.min(plies, seq.length));
+    if (c) out[id] = { previewFen: c.fen, previewMovesSan: c.label };
+  };
+  put("foundation", starter ?? main, 10);
+  put("main", main, 10);
+  put("tournament", club ?? main, 12);
+  put("master", pro ?? club ?? main, 16);
+  if (!out.foundation && main) put("foundation", main, 8);
+  return out;
+}
+
 function buildTrackVariations(openingKey: string): TrainingVariation[] {
   const openingLabel = openingKey.toUpperCase();
+  const previews = branchPreviewsForOpening(openingKey);
   const base: TrainingVariation[] = [
     {
       id: "foundation",
@@ -969,10 +1015,15 @@ function buildTrackVariations(openingKey: string): TrainingVariation[] {
     },
   ];
 
-  const patches = OPENING_TRAINING_VOICE[openingKey]?.branches;
-  if (!patches) return base;
+  const withPreviews = base.map((v) => {
+    const pr = previews[v.id];
+    return pr ? { ...v, previewFen: pr.previewFen, previewMovesSan: pr.previewMovesSan } : v;
+  });
 
-  return base.map((v) => {
+  const patches = OPENING_TRAINING_VOICE[openingKey]?.branches;
+  if (!patches) return withPreviews;
+
+  return withPreviews.map((v) => {
     const p = patches[v.id as keyof typeof patches];
     if (!p) return v;
     return {
@@ -980,6 +1031,8 @@ function buildTrackVariations(openingKey: string): TrainingVariation[] {
       ...p,
       middlegamePlans: p.middlegamePlans ?? v.middlegamePlans,
       commonMistakes: p.commonMistakes ?? v.commonMistakes,
+      previewFen: v.previewFen,
+      previewMovesSan: v.previewMovesSan,
     };
   });
 }

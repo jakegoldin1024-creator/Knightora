@@ -39,10 +39,19 @@ function readTrimmedEnv(name: string): string | null {
   return v.length > 0 ? v : null;
 }
 
+/** Treat .env.example placeholders and obvious typos as unset so checkout shows a config error, not a Stripe 400. */
+function isPlaceholderStripePriceId(value: string): boolean {
+  const v = value.trim().toLowerCase();
+  if (!v.startsWith("price_")) return true;
+  if (v.includes("replace_me") || v.includes("replace-me")) return true;
+  if (/changeme|your_price|example|not_set|todo|xxx/.test(v)) return true;
+  return false;
+}
+
 function firstPriceFromKeys(keys: readonly string[]): string | null {
   for (const key of keys) {
     const v = readTrimmedEnv(key);
-    if (v) return v;
+    if (v && !isPlaceholderStripePriceId(v)) return v;
   }
   return null;
 }
@@ -64,14 +73,34 @@ export function listConfiguredPriceIds(): string[] {
   const ids = new Set<string>();
   for (const key of ALL_PRICE_ENV_KEYS) {
     const v = readTrimmedEnv(key);
-    if (v) ids.add(v);
+    if (v && !isPlaceholderStripePriceId(v)) ids.add(v);
   }
   return [...ids];
 }
 
 export function billingPriceEnvHint(interval: BillingInterval): string {
   const keys = interval === "year" ? STRIPE_YEARLY_PRICE_ENV_KEYS : STRIPE_MONTHLY_PRICE_ENV_KEYS;
-  return `Set one of these in Vercel (or .env.local): ${keys.join(", ")}.`;
+  const primary = interval === "year" ? "STRIPE_PRICE_PAID_YEARLY" : "STRIPE_PRICE_PAID_MONTHLY";
+  return `Set ${primary} (or another supported key) in Vercel or .env.local to a real Price ID (starts with price_). Supported keys: ${keys.join(", ")}.`;
+}
+
+/**
+ * If the user pasted a Stripe Product ID (prod_…) into a price env var, explain the fix.
+ * Checkout line items require Price IDs (price_…), found under each product’s Pricing section.
+ */
+export function billingProductIdMistakeHint(interval: BillingInterval): string | null {
+  const keys = interval === "year" ? STRIPE_YEARLY_PRICE_ENV_KEYS : STRIPE_MONTHLY_PRICE_ENV_KEYS;
+  for (const key of keys) {
+    const v = readTrimmedEnv(key);
+    if (v?.startsWith("prod_")) {
+      return `${key} is set to a Product ID (${v}). Use the recurring Price ID (price_…) for that product instead: Stripe Dashboard → Products → Knightneo ${interval}ly subscription → Pricing → copy the Price ID.`;
+    }
+  }
+  return null;
+}
+
+export function hasStripeSecretKey(): boolean {
+  return readTrimmedEnv("STRIPE_SECRET_KEY") != null;
 }
 
 export function getPlanForPriceId(priceId: string): SubscriptionPlan | null {

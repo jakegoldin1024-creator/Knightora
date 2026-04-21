@@ -28,7 +28,7 @@ export function SiteNav({ active }: { active: "home" | "pricing" | "quiz" | "ana
             Analysis
           </Link>
           <Link className={`${styles.link} ${active === "coach" ? styles.linkActive : ""}`} href="/coach">
-            Coach
+            Chess coach
           </Link>
           {isLoaded && isSignedIn ? (
             <UserButton />

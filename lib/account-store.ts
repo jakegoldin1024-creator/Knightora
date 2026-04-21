@@ -1,9 +1,33 @@
 import { pbkdf2Sync, randomBytes, timingSafeEqual, randomUUID } from "crypto";
 import { promises as fs } from "fs";
 import path from "path";
-import type { QuizProfile, RepertoireResult } from "@/lib/recommendations";
 import type { ChessProfileResponse } from "@/lib/chesscom";
+import type { QuizProfile, RepertoireResult } from "@/lib/recommendations";
 import type { SubscriptionPlan } from "@/lib/subscription";
+
+export type DailyQuestKind = "tactics" | "repertoire" | "review" | "chesscom_insight";
+
+export type DailyQuest = {
+  id: string;
+  kind: DailyQuestKind;
+  title: string;
+  description: string;
+  target: number;
+  progress: number;
+  xpReward: number;
+  completed: boolean;
+  trackId?: "white" | "black-e4" | "black-d4";
+  openingKey?: string;
+};
+
+export type QuestProgress = {
+  /** Calendar date YYYY-MM-DD in `profile.questDayTimezone` (default UTC). */
+  dayKey: string;
+  lightMode: boolean;
+  quests: DailyQuest[];
+  /** Paid rerolls consumed for this calendar day (MVP: max 1). */
+  rerollsUsed?: number;
+};
 
 export type { SubscriptionPlan };
 
@@ -30,6 +54,8 @@ export type SavedDashboard = {
   insights: ChessProfileResponse["insights"] | null;
   savedAt: string;
   trainingProgress: TrainingProgress;
+  /** Daily quest board; omitted in older saves until first generation. */
+  questProgress?: QuestProgress | null;
 };
 
 type StoredUser = {

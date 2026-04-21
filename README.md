@@ -141,10 +141,24 @@ python3 -m http.server 8000
 
 Then visit `http://localhost:8000`.
 
+## Engines: Stockfish vs full-game analysis
+
+- **Lesson positions (`/quiz` board drills):** subscribed users can run **Stockfish 18** in the browser via a worker that loads from **jsDelivr** (see `lib/stockfish-client.ts`). This requires network access to `cdn.jsdelivr.net` and is separate from PGN analysis.
+- **Full-game analysis (`/analysis`, `POST /api/game-analysis`):** uses **chess.js** plus a **shallow heuristic search** (`lib/game-analysis.ts`), not Stockfish—fast and practical for coaching text, but not engine-perfect. Tune cost with `GAME_ANALYSIS_DEPTH` and `GAME_ANALYSIS_MAX_PLIES` in the environment.
+
+## Training content checklist (per opening)
+
+When extending an opening in `data/training.ts` / `data/opening-line-sequences.ts`:
+
+1. Add or extend **SAN sequences** in `MAIN_LINE_MOVES` (and tier extras / deviations as needed); validate with `npm run validate:training`.
+2. Map **line lessons** to **`variationId`** (`main`, `foundation`, `tournament`, `master`, or `deviation`) so branch pickers filter lessons correctly.
+3. Prefer **FEN-backed** board steps (`buildOpeningLineFromSanMoves`) for multi-move drills; single puzzles can use explicit `board` placements.
+4. Optional: enrich copy in `lib/opening-training-voice.ts`—branch previews on the board are computed automatically from tier sequences in `buildTrackVariations`.
+
 ## Known limitations / incomplete areas
 
 1. Persistence is file-based (`data/app-db.json`), so there is no production database yet.
 2. Sign-in uses **Clerk**; legacy email/password APIs may still exist for older accounts. No production database yet—see persistence note above.
-3. Subscription switching is UI + local state only; no real billing provider is connected.
+3. Stripe billing is wired for production when env vars are set; legacy “UI-only” notes may not apply to your deployment—verify Checkout and webhooks for your project.
 4. Chess.com analysis relies on public APIs and recent archives; rate limits and external outages are not fully handled.
 5. Test coverage is missing (no automated unit/integration tests are configured yet).

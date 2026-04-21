@@ -28,6 +28,9 @@ export function LandingPage() {
               <Link className={styles.btnAlt} href="/analysis">
                 Analysis
               </Link>
+              <Link className={styles.btnAlt} href="/coach">
+                Study coach
+              </Link>
               <Link className={styles.btnAlt} href="/pricing">
                 Pricing
               </Link>
@@ -39,8 +42,12 @@ export function LandingPage() {
               <p className={styles.eyebrow}>On the board</p>
               <ul className={styles.listTight}>
                 <li>Main-line spine free—go deeper with a subscription</li>
-                <li>Quiz → your three lines → pick one → real drills</li>
-                <li>Subscribers: PGN / URL analysis + coach-style notes</li>
+                <li>Onboarding (style + study time + quick puzzle check) → suggested openings → branch tabiyas on the board → drills</li>
+                <li>Daily quests on the dashboard (UTC day) — tactics, repertoire, reviews, Chess.com-informed prompts when linked</li>
+                <li>
+                  <strong>Study coach</strong> (sign in): chat about chess on <Link href="/coach">/coach</Link>. Separate from PGN analysis.
+                </li>
+                <li>Subscribers: PGN / URL analysis + written coach-style notes on /analysis</li>
               </ul>
             </aside>
           </div>
@@ -54,8 +61,8 @@ export function LandingPage() {
             </h2>
             <ol className={styles.steps}>
               <li>
-                <strong>Style quiz</strong>
-                <span>Rating band, time control, risk, and goals—so suggestions fit your real games.</span>
+                <strong>Onboarding</strong>
+                <span>Rating band, study-time commitment, a short puzzle diagnostic, time control, risk, and goals—so suggestions and daily quests fit your real games.</span>
               </li>
               <li>
                 <strong>Three suggested systems</strong>
@@ -67,11 +74,21 @@ export function LandingPage() {
               </li>
               <li>
                 <strong>Pick one opening to hone</strong>
-                <span>Intro, line primer, branch choice, then chapter drills on the board.</span>
+                <span>Intro, primer with mini-boards for each branch, you choose the line, then chapter drills on the board.</span>
+              </li>
+              <li>
+                <strong>Daily quests (dashboard)</strong>
+                <span>After onboarding, UTC-day quests blend tactics, repertoire wins, reviews, and Chess.com-flavored goals—optional light-day mode when you need a smaller plate.</span>
+              </li>
+              <li>
+                <strong>Optional: AI Study coach</strong>
+                <span>
+                  After sign-in, open <Link href="/coach">Study coach</Link> for conversational help—different from the PGN game coach on /analysis.
+                </span>
               </li>
               <li>
                 <strong>Optional: full-game analysis</strong>
-                <span>Paste a PGN or link; subscribed users get move-by-move feedback and coach-style notes.</span>
+                <span>Paste a PGN or link; subscribed users get move-by-move feedback and coach-style notes (heuristic engine, not live Stockfish).</span>
               </li>
             </ol>
           </div>
@@ -86,6 +103,10 @@ export function LandingPage() {
             <li>
               <Link href="/analysis">Game analysis</Link>
               <span>Upload or link a game; see key moments and practical alternatives.</span>
+            </li>
+            <li>
+              <Link href="/coach">Study coach</Link>
+              <span>Talk chess with an AI coach (sign in). For reviewed games, use analysis instead.</span>
             </li>
             <li>
               <Link href="/pricing">Pricing</Link>
